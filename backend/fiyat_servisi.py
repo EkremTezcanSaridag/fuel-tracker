@@ -3,6 +3,14 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import json
 import os
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+cred = credentials.Certificate(os.path.join(os.path.dirname(os.path.abspath(__file__)), "firebase-key.json"))
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+
 
 def tum_fiyatlari_cek():
     url = "https://www.aytemiz.com.tr/akaryakit-fiyatlari/benzin-fiyatlari"
@@ -45,13 +53,18 @@ def tum_fiyatlari_cek():
 
         print(f"Toplam {len(il_verileri)} il bulundu")
         return il_verileri
-
     except requests.RequestException as e:
         print(f"İstek hatası: {e}")
         return {}
     except Exception as e:
         print(f"Hata: {e}")
         return {}
+
+
+def firestore_yaz(veri):
+    for il_adi, kayit in veri.items():
+        db.collection("fiyatlar").document(il_adi).set(kayit)
+    print(f"Firestore'a {len(veri)} il yazıldı")
 
 if __name__ == "__main__":
     print(f"Aytemiz'den tüm il fiyatları çekiliyor... {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
