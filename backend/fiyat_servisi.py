@@ -3,83 +3,49 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import json
 import os
-import firebase_admin
-from firebase_admin import credentials, firestore
+import re
+from supabase import create_client
+from dotenv import load_dotenv
 
-cred = credentials.Certificate(os.path.join(os.path.dirname(os.path.abspath(__file__)), "firebase-key.json"))
-firebase_admin.initialize_app(cred)
-db = firestore.client()
-
-
+load_dotenv()
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
 def tum_fiyatlari_cek():
     url = "https://www.aytemiz.com.tr/akaryakit-fiyatlari/benzin-fiyatlari"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(url, headers=headers, timeout=15)
+    soup = BeautifulSoup(response.text, "html.parser")
+    duz_metin = soup.get_text(separator=" ")
 
-    try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        # ensure correct encoding
-        if not response.encoding or response.encoding == 'ISO-8859-1':
-            response.encoding = 'utf-8'
-        soup = BeautifulSoup(response.text, "html.parser")
-        tablo = soup.find("table")
+    desen = r"([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s?/\s?[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)?)\s*(\d{2},\d{2})\s*(\d{2},\d{2})\s*(\d{2},\d{2})\s*(\d{2},\d{2})\s*(\d{2},\d{2})"
 
-        if not tablo:
-            print("Tablo bulunamadı! Sayfa yapısı değişmiş olabilir.")
-            return {}
+    guncelleme = datetime.now().strftime("%Y-%m-%d %H:%M")
+    il_verileri = {}
 
-        satirlar = tablo.find_all("tr")
-        guncelleme = datetime.now().strftime("%Y-%m-%d %H:%M")
+    for eslesme in re.finditer(desen, duz_metin):
+        il_adi = eslesme.group(1).strip()
+        if il_adi in il_verileri:
+            continue
+        il_verileri[il_adi] = {
+            "il": il_adi,
+            "benzin_95": eslesme.group(2),
+            "motorin": eslesme.group(3),
+            "lpg": eslesme.group(5),
+            "guncelleme": guncelleme
+        }
 
-        il_verileri = {}
+    return il_verileri
 
-        for satir in satirlar:
-            hucreler = satir.find_all("td")
-            if len(hucreler) < 2:
-                continue
-
-            il_adi = hucreler[0].text.strip()
-            fiyatlar = [h.text.strip() for h in hucreler[1:]]
-
-            if il_adi:
-                il_verileri[il_adi] = {
-                    "il": il_adi,
-                    "benzin_95": fiyatlar[0] if len(fiyatlar) > 0 else None,
-                    "guncelleme": guncelleme
-                }
-
-        print(f"Toplam {len(il_verileri)} il bulundu")
-        return il_verileri
-    except requests.RequestException as e:
-        print(f"İstek hatası: {e}")
-        return {}
-    except Exception as e:
-        print(f"Hata: {e}")
-        return {}
-
-
-def firestore_yaz(veri):
+def supabase_yaz(veri):
     for il_adi, kayit in veri.items():
-        db.collection("fiyatlar").document(il_adi).set(kayit)
-    print(f"Firestore'a {len(veri)} il yazıldı")
+        supabase.table("fiyatlar").upsert(kayit).execute()
+    print(f"Supabase'e {len(veri)} il yazıldı")
 
 if __name__ == "__main__":
-    print(f"Aytemiz'den tüm il fiyatları çekiliyor... {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
     veri = tum_fiyatlari_cek()
-
-    if veri:
-        klasor = os.path.dirname(os.path.abspath(__file__))
-        dosya_yolu = os.path.join(klasor, "fiyatlar.json")
-
-        with open(dosya_yolu, "w", encoding="utf-8") as f:
-            json.dump(veri, f, ensure_ascii=False, indent=2)
-
-        for il in sorted(veri.keys()):
-            print(f"  {il}: {veri[il]['benzin_95']}")
-
-        print(f"\nTamamlandı! {dosya_yolu} → {len(veri)} il")
-    else:
-        print("Veri çekilemedi, dosya oluşturulmadı.")
+    klasor = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(klasor, "fiyatlar.json"), "w", encoding="utf-8") as f:
+        json.dump(veri, f, ensure_ascii=False, indent=2)
+    for il in sorted(veri.keys()):
+        print(f"  {il}: {veri[il]['benzin_95']}")
+    supabase_yaz(veri)
