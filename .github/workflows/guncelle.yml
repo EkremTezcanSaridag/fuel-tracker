@@ -1,0 +1,28 @@
+name: Günlük Fiyat Güncelleme
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # Her gün 08:00 Türkiye saati (UTC+3)
+  workflow_dispatch:       # Elle de çalıştırılabilir
+
+jobs:
+  guncelle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu çek
+        uses: actions/checkout@v3
+
+      - name: Python kur
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Paketleri kur
+        run: pip install requests beautifulsoup4 supabase python-dotenv
+
+      - name: Fiyatları güncelle
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python backend/fiyat_servisi.py
