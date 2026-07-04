@@ -1,576 +1,576 @@
 {
   "Adana": {
     "il": "Adana",
-    "benzin_95": "64,48",
-    "motorin": "66,46",
+    "benzin_95": "64,57",
+    "motorin": "66,55",
     "lpg": "44,09",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Adıyaman": {
     "il": "Adıyaman",
-    "benzin_95": "64,82",
-    "motorin": "66,83",
+    "benzin_95": "64,91",
+    "motorin": "66,92",
     "lpg": "44,13",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Afyonkarahisar": {
     "il": "Afyonkarahisar",
-    "benzin_95": "64,70",
-    "motorin": "66,82",
+    "benzin_95": "64,79",
+    "motorin": "66,91",
     "lpg": "44,09",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Ağrı": {
     "il": "Ağrı",
-    "benzin_95": "64,97",
-    "motorin": "66,96",
+    "benzin_95": "65,06",
+    "motorin": "67,05",
     "lpg": "44,16",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Aksaray": {
     "il": "Aksaray",
-    "benzin_95": "64,55",
-    "motorin": "66,53",
+    "benzin_95": "64,64",
+    "motorin": "66,62",
     "lpg": "44,12",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Amasya": {
     "il": "Amasya",
-    "benzin_95": "64,24",
-    "motorin": "66,21",
+    "benzin_95": "64,33",
+    "motorin": "66,30",
     "lpg": "44,10",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Ankara": {
     "il": "Ankara",
-    "benzin_95": "63,64",
-    "motorin": "65,63",
+    "benzin_95": "63,73",
+    "motorin": "65,72",
     "lpg": "44,11",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Antalya": {
     "il": "Antalya",
-    "benzin_95": "64,86",
-    "motorin": "66,94",
+    "benzin_95": "64,95",
+    "motorin": "67,03",
     "lpg": "44,06",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Ardahan": {
     "il": "Ardahan",
-    "benzin_95": "64,71",
-    "motorin": "66,70",
+    "benzin_95": "64,80",
+    "motorin": "66,79",
     "lpg": "44,11",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Artvin": {
     "il": "Artvin",
-    "benzin_95": "64,54",
-    "motorin": "66,51",
+    "benzin_95": "64,63",
+    "motorin": "66,60",
     "lpg": "44,10",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Aydın": {
     "il": "Aydın",
-    "benzin_95": "64,14",
-    "motorin": "66,14",
+    "benzin_95": "64,23",
+    "motorin": "66,23",
     "lpg": "44,05",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Balıkesir": {
     "il": "Balıkesir",
-    "benzin_95": "64,24",
-    "motorin": "66,23",
+    "benzin_95": "64,33",
+    "motorin": "66,32",
     "lpg": "44,06",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Bartın": {
     "il": "Bartın",
-    "benzin_95": "63,96",
-    "motorin": "65,76",
+    "benzin_95": "64,05",
+    "motorin": "65,85",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Batman": {
     "il": "Batman",
-    "benzin_95": "65,12",
-    "motorin": "67,21",
+    "benzin_95": "65,21",
+    "motorin": "67,30",
     "lpg": "44,16",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Bayburt": {
     "il": "Bayburt",
-    "benzin_95": "64,41",
-    "motorin": "66,39",
+    "benzin_95": "64,50",
+    "motorin": "66,48",
     "lpg": "44,09",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Bilecik": {
     "il": "Bilecik",
-    "benzin_95": "63,61",
-    "motorin": "65,38",
+    "benzin_95": "63,70",
+    "motorin": "65,47",
     "lpg": "44,06",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Bingöl": {
     "il": "Bingöl",
-    "benzin_95": "65,14",
-    "motorin": "67,27",
+    "benzin_95": "65,23",
+    "motorin": "67,36",
     "lpg": "44,16",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Bitlis": {
     "il": "Bitlis",
-    "benzin_95": "65,23",
-    "motorin": "67,36",
+    "benzin_95": "65,32",
+    "motorin": "67,45",
     "lpg": "44,17",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Bolu": {
     "il": "Bolu",
-    "benzin_95": "63,73",
-    "motorin": "65,50",
+    "benzin_95": "63,82",
+    "motorin": "65,59",
     "lpg": "44,06",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Burdur": {
     "il": "Burdur",
-    "benzin_95": "64,70",
-    "motorin": "66,78",
+    "benzin_95": "64,79",
+    "motorin": "66,87",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Bursa": {
     "il": "Bursa",
-    "benzin_95": "63,73",
-    "motorin": "65,52",
+    "benzin_95": "63,82",
+    "motorin": "65,61",
     "lpg": "44,09",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Çanakkale": {
     "il": "Çanakkale",
-    "benzin_95": "64,30",
-    "motorin": "66,27",
+    "benzin_95": "64,39",
+    "motorin": "66,36",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Çankırı": {
     "il": "Çankırı",
-    "benzin_95": "64,05",
-    "motorin": "66,04",
+    "benzin_95": "64,14",
+    "motorin": "66,13",
     "lpg": "44,10",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Çorum": {
     "il": "Çorum",
-    "benzin_95": "64,25",
-    "motorin": "66,21",
+    "benzin_95": "64,34",
+    "motorin": "66,30",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Denizli": {
     "il": "Denizli",
-    "benzin_95": "64,37",
-    "motorin": "66,42",
+    "benzin_95": "64,46",
+    "motorin": "66,51",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Diyarbakır": {
     "il": "Diyarbakır",
-    "benzin_95": "65,11",
-    "motorin": "67,21",
+    "benzin_95": "65,20",
+    "motorin": "67,30",
     "lpg": "44,14",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Düzce": {
     "il": "Düzce",
-    "benzin_95": "63,57",
-    "motorin": "65,35",
+    "benzin_95": "63,66",
+    "motorin": "65,44",
     "lpg": "44,05",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Edirne": {
     "il": "Edirne",
-    "benzin_95": "63,77",
-    "motorin": "65,78",
+    "benzin_95": "63,86",
+    "motorin": "65,87",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Elazığ": {
     "il": "Elazığ",
-    "benzin_95": "65,23",
-    "motorin": "67,34",
+    "benzin_95": "65,32",
+    "motorin": "67,43",
     "lpg": "44,14",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Erzincan": {
     "il": "Erzincan",
-    "benzin_95": "64,65",
-    "motorin": "66,63",
+    "benzin_95": "64,74",
+    "motorin": "66,72",
     "lpg": "44,10",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Erzurum": {
     "il": "Erzurum",
-    "benzin_95": "64,70",
-    "motorin": "66,69",
+    "benzin_95": "64,79",
+    "motorin": "66,78",
     "lpg": "44,11",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Eskişehir": {
     "il": "Eskişehir",
-    "benzin_95": "63,92",
-    "motorin": "65,71",
+    "benzin_95": "64,01",
+    "motorin": "65,80",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Gaziantep": {
     "il": "Gaziantep",
-    "benzin_95": "64,62",
-    "motorin": "66,59",
+    "benzin_95": "64,71",
+    "motorin": "66,68",
     "lpg": "44,09",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Giresun": {
     "il": "Giresun",
-    "benzin_95": "64,46",
-    "motorin": "66,45",
+    "benzin_95": "64,55",
+    "motorin": "66,54",
     "lpg": "44,25",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Gümüşhane": {
     "il": "Gümüşhane",
-    "benzin_95": "64,42",
-    "motorin": "66,39",
+    "benzin_95": "64,51",
+    "motorin": "66,48",
     "lpg": "44,13",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Hakkari": {
     "il": "Hakkari",
-    "benzin_95": "65,24",
-    "motorin": "67,36",
+    "benzin_95": "65,33",
+    "motorin": "67,45",
     "lpg": "44,23",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Hatay": {
     "il": "Hatay",
-    "benzin_95": "64,35",
-    "motorin": "66,35",
+    "benzin_95": "64,44",
+    "motorin": "66,44",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Iğdır": {
     "il": "Iğdır",
-    "benzin_95": "64,94",
-    "motorin": "66,95",
+    "benzin_95": "65,03",
+    "motorin": "67,04",
     "lpg": "44,16",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Isparta": {
     "il": "Isparta",
-    "benzin_95": "64,70",
-    "motorin": "66,84",
+    "benzin_95": "64,79",
+    "motorin": "66,93",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "İstanbul / Anadolu": {
     "il": "İstanbul / Anadolu",
-    "benzin_95": "62,54",
-    "motorin": "64,39",
+    "benzin_95": "62,63",
+    "motorin": "64,48",
     "lpg": "44,05",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "İstanbul / Avrupa": {
     "il": "İstanbul / Avrupa",
-    "benzin_95": "62,69",
-    "motorin": "64,51",
+    "benzin_95": "62,78",
+    "motorin": "64,60",
     "lpg": "44,05",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "İzmir": {
     "il": "İzmir",
-    "benzin_95": "63,93",
-    "motorin": "65,91",
+    "benzin_95": "64,02",
+    "motorin": "66,00",
     "lpg": "44,03",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kahramanmaraş": {
     "il": "Kahramanmaraş",
-    "benzin_95": "64,60",
-    "motorin": "66,62",
+    "benzin_95": "64,69",
+    "motorin": "66,71",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Karabük": {
     "il": "Karabük",
-    "benzin_95": "63,98",
-    "motorin": "65,77",
+    "benzin_95": "64,07",
+    "motorin": "65,86",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Karaman": {
     "il": "Karaman",
-    "benzin_95": "64,53",
-    "motorin": "66,53",
+    "benzin_95": "64,62",
+    "motorin": "66,62",
     "lpg": "44,13",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kars": {
     "il": "Kars",
-    "benzin_95": "64,71",
-    "motorin": "66,69",
+    "benzin_95": "64,80",
+    "motorin": "66,78",
     "lpg": "44,13",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kastamonu": {
     "il": "Kastamonu",
-    "benzin_95": "64,35",
-    "motorin": "66,31",
+    "benzin_95": "64,44",
+    "motorin": "66,40",
     "lpg": "44,10",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kayseri": {
     "il": "Kayseri",
-    "benzin_95": "64,65",
-    "motorin": "66,64",
+    "benzin_95": "64,74",
+    "motorin": "66,73",
     "lpg": "44,13",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kırıkkale": {
     "il": "Kırıkkale",
-    "benzin_95": "63,95",
-    "motorin": "65,93",
+    "benzin_95": "64,04",
+    "motorin": "66,02",
     "lpg": "44,10",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kırklareli": {
     "il": "Kırklareli",
-    "benzin_95": "63,76",
-    "motorin": "65,76",
+    "benzin_95": "63,85",
+    "motorin": "65,85",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kırşehir": {
     "il": "Kırşehir",
-    "benzin_95": "63,99",
-    "motorin": "65,99",
+    "benzin_95": "64,08",
+    "motorin": "66,08",
     "lpg": "44,14",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kilis": {
     "il": "Kilis",
-    "benzin_95": "64,35",
-    "motorin": "66,36",
+    "benzin_95": "64,44",
+    "motorin": "66,45",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kocaeli": {
     "il": "Kocaeli",
-    "benzin_95": "63,09",
-    "motorin": "64,88",
+    "benzin_95": "63,18",
+    "motorin": "64,97",
     "lpg": "44,04",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Konya": {
     "il": "Konya",
-    "benzin_95": "64,66",
-    "motorin": "66,79",
+    "benzin_95": "64,75",
+    "motorin": "66,88",
     "lpg": "44,13",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Kütahya": {
     "il": "Kütahya",
-    "benzin_95": "64,57",
-    "motorin": "66,39",
+    "benzin_95": "64,66",
+    "motorin": "66,48",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Malatya": {
     "il": "Malatya",
-    "benzin_95": "64,82",
-    "motorin": "66,82",
+    "benzin_95": "64,91",
+    "motorin": "66,91",
     "lpg": "44,12",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Manisa": {
     "il": "Manisa",
-    "benzin_95": "64,01",
-    "motorin": "65,98",
+    "benzin_95": "64,10",
+    "motorin": "66,07",
     "lpg": "44,03",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Mardin": {
     "il": "Mardin",
-    "benzin_95": "65,13",
-    "motorin": "67,22",
+    "benzin_95": "65,22",
+    "motorin": "67,31",
     "lpg": "44,14",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Mersin": {
     "il": "Mersin",
-    "benzin_95": "64,47",
-    "motorin": "66,45",
+    "benzin_95": "64,56",
+    "motorin": "66,54",
     "lpg": "44,09",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Muğla": {
     "il": "Muğla",
-    "benzin_95": "64,41",
-    "motorin": "66,41",
+    "benzin_95": "64,50",
+    "motorin": "66,50",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Muş": {
     "il": "Muş",
-    "benzin_95": "65,16",
-    "motorin": "67,28",
+    "benzin_95": "65,25",
+    "motorin": "67,37",
     "lpg": "44,18",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Nevşehir": {
     "il": "Nevşehir",
-    "benzin_95": "64,55",
-    "motorin": "66,55",
+    "benzin_95": "64,64",
+    "motorin": "66,64",
     "lpg": "44,24",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Niğde": {
     "il": "Niğde",
-    "benzin_95": "64,47",
-    "motorin": "66,46",
+    "benzin_95": "64,56",
+    "motorin": "66,55",
     "lpg": "44,11",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Ordu": {
     "il": "Ordu",
-    "benzin_95": "64,26",
-    "motorin": "66,21",
+    "benzin_95": "64,35",
+    "motorin": "66,30",
     "lpg": "44,08",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Osmaniye": {
     "il": "Osmaniye",
-    "benzin_95": "64,34",
-    "motorin": "66,35",
+    "benzin_95": "64,43",
+    "motorin": "66,44",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Rize": {
     "il": "Rize",
-    "benzin_95": "64,40",
-    "motorin": "66,37",
+    "benzin_95": "64,49",
+    "motorin": "66,46",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Sakarya": {
     "il": "Sakarya",
-    "benzin_95": "63,41",
-    "motorin": "65,18",
+    "benzin_95": "63,50",
+    "motorin": "65,27",
     "lpg": "44,04",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Samsun": {
     "il": "Samsun",
-    "benzin_95": "64,23",
-    "motorin": "66,20",
+    "benzin_95": "64,32",
+    "motorin": "66,29",
     "lpg": "44,06",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Siirt": {
     "il": "Siirt",
-    "benzin_95": "65,16",
-    "motorin": "67,25",
+    "benzin_95": "65,25",
+    "motorin": "67,34",
     "lpg": "44,17",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Sinop": {
     "il": "Sinop",
-    "benzin_95": "64,29",
-    "motorin": "66,26",
+    "benzin_95": "64,38",
+    "motorin": "66,35",
     "lpg": "44,06",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Sivas": {
     "il": "Sivas",
-    "benzin_95": "64,65",
-    "motorin": "66,62",
+    "benzin_95": "64,74",
+    "motorin": "66,71",
     "lpg": "44,14",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Şanlıurfa": {
     "il": "Şanlıurfa",
-    "benzin_95": "64,80",
-    "motorin": "66,80",
+    "benzin_95": "64,89",
+    "motorin": "66,89",
     "lpg": "44,11",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Şırnak": {
     "il": "Şırnak",
-    "benzin_95": "65,21",
-    "motorin": "67,31",
+    "benzin_95": "65,30",
+    "motorin": "67,40",
     "lpg": "44,17",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Tekirdağ": {
     "il": "Tekirdağ",
-    "benzin_95": "63,36",
-    "motorin": "65,36",
+    "benzin_95": "63,45",
+    "motorin": "65,45",
     "lpg": "44,06",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Tokat": {
     "il": "Tokat",
-    "benzin_95": "64,29",
-    "motorin": "66,26",
+    "benzin_95": "64,38",
+    "motorin": "66,35",
     "lpg": "44,09",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Trabzon": {
     "il": "Trabzon",
-    "benzin_95": "64,39",
-    "motorin": "66,36",
+    "benzin_95": "64,48",
+    "motorin": "66,45",
     "lpg": "44,06",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Tunceli": {
     "il": "Tunceli",
-    "benzin_95": "65,14",
-    "motorin": "67,24",
+    "benzin_95": "65,23",
+    "motorin": "67,33",
     "lpg": "44,16",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Uşak": {
     "il": "Uşak",
-    "benzin_95": "64,38",
-    "motorin": "66,39",
+    "benzin_95": "64,47",
+    "motorin": "66,48",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Van": {
     "il": "Van",
-    "benzin_95": "65,23",
-    "motorin": "67,26",
+    "benzin_95": "65,32",
+    "motorin": "67,35",
     "lpg": "44,20",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Yalova": {
     "il": "Yalova",
-    "benzin_95": "63,37",
-    "motorin": "65,16",
+    "benzin_95": "63,46",
+    "motorin": "65,25",
     "lpg": "44,05",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Yozgat": {
     "il": "Yozgat",
-    "benzin_95": "64,33",
-    "motorin": "66,32",
+    "benzin_95": "64,42",
+    "motorin": "66,41",
     "lpg": "44,10",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   },
   "Zonguldak": {
     "il": "Zonguldak",
-    "benzin_95": "63,92",
-    "motorin": "65,71",
+    "benzin_95": "64,01",
+    "motorin": "65,80",
     "lpg": "44,07",
-    "guncelleme": "2026-07-03 18:34"
+    "guncelleme": "2026-07-04 22:23"
   }
 }
