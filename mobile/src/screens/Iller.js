@@ -4,13 +4,123 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Text, StyleSheet } from 'react-native'
 import { colors, shadows } from '../theme'
 
-const cities = [
-  { name: 'İstanbul', price: '64.12 ₺', change: '+0.05 ₺', stations: '1.248 istasyon' },
-  { name: 'Ankara', price: '64.10 ₺', change: '+0.03 ₺', stations: '842 istasyon' },
-  { name: 'İzmir', price: '64.08 ₺', change: '+0.01 ₺', stations: '716 istasyon' },
-  { name: 'Antalya', price: '64.02 ₺', change: '-0.05 ₺', stations: '438 istasyon' },
-  { name: 'Adana', price: '63.95 ₺', change: '-0.12 ₺', stations: '386 istasyon' },
+const provinceNames = [
+  'Adana',
+  'Adıyaman',
+  'Afyonkarahisar',
+  'Ağrı',
+  'Amasya',
+  'Ankara',
+  'Antalya',
+  'Artvin',
+  'Aydın',
+  'Balıkesir',
+  'Bilecik',
+  'Bingöl',
+  'Bitlis',
+  'Bolu',
+  'Burdur',
+  'Bursa',
+  'Çanakkale',
+  'Çankırı',
+  'Çorum',
+  'Denizli',
+  'Diyarbakır',
+  'Edirne',
+  'Elazığ',
+  'Erzincan',
+  'Erzurum',
+  'Eskişehir',
+  'Gaziantep',
+  'Giresun',
+  'Gümüşhane',
+  'Hakkari',
+  'Hatay',
+  'Isparta',
+  'Mersin',
+  'İstanbul',
+  'İzmir',
+  'Kars',
+  'Kastamonu',
+  'Kayseri',
+  'Kırklareli',
+  'Kırşehir',
+  'Kocaeli',
+  'Konya',
+  'Kütahya',
+  'Malatya',
+  'Manisa',
+  'Kahramanmaraş',
+  'Mardin',
+  'Muğla',
+  'Muş',
+  'Nevşehir',
+  'Niğde',
+  'Ordu',
+  'Rize',
+  'Sakarya',
+  'Samsun',
+  'Siirt',
+  'Sinop',
+  'Sivas',
+  'Tekirdağ',
+  'Tokat',
+  'Trabzon',
+  'Tunceli',
+  'Şanlıurfa',
+  'Uşak',
+  'Van',
+  'Yozgat',
+  'Zonguldak',
+  'Aksaray',
+  'Bayburt',
+  'Karaman',
+  'Kırıkkale',
+  'Batman',
+  'Şırnak',
+  'Bartın',
+  'Ardahan',
+  'Iğdır',
+  'Yalova',
+  'Karabük',
+  'Kilis',
+  'Osmaniye',
+  'Düzce',
 ]
+
+const highlightedCities = {
+  Adana: { price: 63.95, change: -0.12, stations: 386 },
+  Ankara: { price: 64.10, change: 0.03, stations: 842 },
+  Antalya: { price: 64.02, change: -0.05, stations: 438 },
+  İstanbul: { price: 64.12, change: 0.05, stations: 1248 },
+  İzmir: { price: 64.08, change: 0.01, stations: 716 },
+}
+
+function formatPrice(value) {
+  return `${value.toFixed(2)} ₺`
+}
+
+function formatStationCount(value) {
+  return `${String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} istasyon`
+}
+
+const cities = provinceNames.map((name, index) => {
+  const fallbackPrice = 64 + ((index * 7) % 37) / 100
+  const fallbackChange = ((index % 9) - 4) / 100
+  const fallbackStations = 96 + ((index * 37) % 420)
+  const city = highlightedCities[name] ?? {
+    price: fallbackPrice,
+    change: fallbackChange,
+    stations: fallbackStations,
+  }
+
+  return {
+    name,
+    price: formatPrice(city.price),
+    change: `${city.change >= 0 ? '+' : ''}${city.change.toFixed(2)} ₺`,
+    stations: formatStationCount(city.stations),
+  }
+})
 
 const fuelTabs = [
   { label: 'Benzin', icon: 'gas-station' },
@@ -42,7 +152,7 @@ export default function Iller() {
             <Text style={styles.subtitle}>Benzin için günlük ortalama fiyatlar.</Text>
           </View>
           <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>81 İl</Text>
+            <Text style={styles.countBadgeText}>{cities.length} İl</Text>
           </View>
         </View>
 
