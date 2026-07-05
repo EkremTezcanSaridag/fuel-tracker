@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Text, StyleSheet, useWindowDimensions } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, View, Text, StyleSheet, useWindowDimensions } from 'react-native'
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 
@@ -45,7 +45,7 @@ function buildSegments(points, strokeWidth) {
 
 export default function AnaSayfa() {
   const { width } = useWindowDimensions()
-  const { data } = useFuelData()
+  const { data, refresh, refreshing } = useFuelData()
   const fuels = data.homeFuels
   const trendSeries = data.homeTrendSeries
   const chartWidth = Math.max(210, Math.min(width - 92, 330))
@@ -61,19 +61,44 @@ export default function AnaSayfa() {
           segments: buildSegments(points, series.strokeWidth),
         }
       }),
-    [chartWidth],
+    [chartWidth, trendSeries],
   )
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            colors={[colors.accent]}
+            onRefresh={refresh}
+            progressBackgroundColor={colors.surface}
+            refreshing={refreshing}
+            tintColor={colors.accent}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <View style={styles.headerMark}>
             <MaterialCommunityIcons name="fuel" size={18} color={colors.accent} />
           </View>
           <Text style={styles.brand}>PompaMetre</Text>
-          <MaterialCommunityIcons name="account-circle-outline" size={21} color={colors.accent} />
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityLabel="Fiyatları yenile"
+              onPress={refresh}
+              style={({ pressed }) => [styles.refreshButton, pressed && styles.pressed]}
+            >
+              <MaterialCommunityIcons
+                name="refresh"
+                size={17}
+                color={refreshing ? colors.mutedSoft : colors.accent}
+              />
+            </Pressable>
+            <MaterialCommunityIcons name="account-circle-outline" size={21} color={colors.accent} />
+          </View>
         </View>
 
         <View style={styles.metaRow}>
@@ -219,6 +244,24 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 18,
     fontWeight: '900',
+  },
+  headerActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  refreshButton: {
+    alignItems: 'center',
+    backgroundColor: colors.bgSoft,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    marginRight: 10,
+    width: 34,
+  },
+  pressed: {
+    opacity: 0.72,
   },
   metaRow: {
     alignItems: 'center',
