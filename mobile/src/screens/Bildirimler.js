@@ -1,44 +1,174 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Text, StyleSheet, Switch } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
+import {
+  defaultNotificationSettings,
+  getNotificationPermissionStatus,
+  loadNotificationSettings,
+  requestNotificationAccess,
+  saveNotificationSettings,
+  sendTestNotification,
+} from '../services/notifications'
 
 const fuelChips = ['Benzin', 'Motorin', 'LPG']
 
+function getPermissionCopy(permission) {
+  if (permission.granted) {
+    return {
+      badge: 'Aktif',
+      icon: 'bell-check-outline',
+      title: 'Bildirim izni açık',
+      desc: permission.expoPushToken ? 'Push token hazırlandı.' : 'Yerel bildirimler hazır.',
+      tone: 'active',
+    }
+  }
+
+  if (permission.canAskAgain === false) {
+    return {
+      badge: 'Kapalı',
+      icon: 'bell-off-outline',
+      title: 'Telefon izni kapalı',
+      desc: 'Bildirimleri açmak için cihaz ayarlarından izin vermek gerekiyor.',
+      tone: 'blocked',
+    }
+  }
+
+  return {
+    badge: 'Bekliyor',
+    icon: 'bell-plus-outline',
+    title: 'Bildirim izni bekliyor',
+    desc: 'Açık ayarlardan biri seçildiğinde izin isteyeceğiz.',
+    tone: 'pending',
+  }
+}
+
+function formatToken(token) {
+  if (!token) {
+    return 'Token yok'
+  }
+
+  return `${token.slice(0, 18)}...${token.slice(-6)}`
+}
+
 export default function Bildirimler() {
   const { data } = useFuelData()
-  const [dailyAlerts, setDailyAlerts] = useState(true)
-  const [cityAlerts, setCityAlerts] = useState(true)
-  const [weeklySummary, setWeeklySummary] = useState(false)
-  const [quietHours, setQuietHours] = useState(true)
+  const [settings, setSettings] = useState(defaultNotificationSettings)
+  const [permission, setPermission] = useState({
+    canAskAgain: true,
+    expoPushToken: null,
+    granted: false,
+    status: 'undetermined',
+    tokenError: null,
+  })
+  const [loading, setLoading] = useState(true)
+  const [permissionBusy, setPermissionBusy] = useState(false)
+  const [testBusy, setTestBusy] = useState(false)
   const cityChips = data.cities.slice(0, 3).map((city) => city.name)
+  const permissionCopy = getPermissionCopy(permission)
 
-  const notificationRows = [
-    {
-      icon: 'bell-ring-outline',
-      title: 'Günlük fiyat uyarıları',
-      desc: 'Önemli değişikliklerde anlık bildirim gönder.',
-      value: dailyAlerts,
-      onValueChange: setDailyAlerts,
-    },
-    {
-      icon: 'map-marker-radius-outline',
-      title: 'İl bazlı uyarılar',
-      desc: 'Seçili şehirler için ayrı fiyat bildirimi al.',
-      value: cityAlerts,
-      onValueChange: setCityAlerts,
-    },
-    {
-      icon: 'email-newsletter',
-      title: 'Haftalık özet',
-      desc: 'Pazar akşamı kısa fiyat özeti gönder.',
-      value: weeklySummary,
-      onValueChange: setWeeklySummary,
-    },
-  ]
+  useEffect(() => {
+    let isMounted = true
+
+    Promise.all([loadNotificationSettings(), getNotificationPermissionStatus()]).then(
+      ([storedSettings, currentPermission]) => {
+        if (!isMounted) {
+          return
+        }
+
+        setSettings(storedSettings)
+        setPermission(currentPermission)
+        setLoading(false)
+      },
+    )
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const notificationRows = useMemo(
+    () => [
+      {
+        desc: 'Önemli fiyat hareketlerinde anlık uyarı.',
+        icon: 'bell-ring-outline',
+        key: 'dailyAlerts',
+        title: 'Günlük fiyat uyarıları',
+        value: settings.dailyAlerts,
+      },
+      {
+        desc: 'Takip edilen iller için ayrı bildirim.',
+        icon: 'map-marker-radius-outline',
+        key: 'cityAlerts',
+        title: 'İl bazlı uyarılar',
+        value: settings.cityAlerts,
+      },
+      {
+        desc: 'Haftalık kısa fiyat özeti.',
+        icon: 'email-newsletter',
+        key: 'weeklySummary',
+        title: 'Haftalık özet',
+        value: settings.weeklySummary,
+      },
+    ],
+    [settings],
+  )
+
+  async function ensureNotificationAccess() {
+    setPermissionBusy(true)
+
+    const nextPermission = await requestNotificationAccess()
+
+    setPermission(nextPermission)
+    setPermissionBusy(false)
+
+    if (!nextPermission.granted) {
+      Alert.alert('Bildirim izni kapalı', 'Telefon ayarlarından PompaMetre bildirimlerine izin vermen gerekiyor.')
+      return false
+    }
+
+    return true
+  }
+
+  async function updateSetting(key, value) {
+    if (value && key !== 'quietHours') {
+      const allowed = await ensureNotificationAccess()
+
+      if (!allowed) {
+        return
+      }
+    }
+
+    const nextSettings = {
+      ...settings,
+      [key]: value,
+    }
+
+    setSettings(nextSettings)
+    await saveNotificationSettings(nextSettings)
+  }
+
+  async function handleTestNotification() {
+    const allowed = permission.granted || (await ensureNotificationAccess())
+
+    if (!allowed) {
+      return
+    }
+
+    setTestBusy(true)
+
+    try {
+      await sendTestNotification()
+      Alert.alert('Test bildirimi hazır', 'Birkaç saniye içinde telefonuna test bildirimi düşmeli.')
+    } catch (error) {
+      Alert.alert('Bildirim gönderilemedi', error?.message ?? 'Beklenmeyen bir sorun oluştu.')
+    } finally {
+      setTestBusy(false)
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -57,27 +187,58 @@ export default function Bildirimler() {
             <Text style={styles.title}>Bildirimler</Text>
             <Text style={styles.subtitle}>Fiyat değişimlerini ve özet raporları yönetin.</Text>
           </View>
-          <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusBadgeText}>Aktif</Text>
+          <View style={[styles.statusBadge, styles[`${permissionCopy.tone}Badge`]]}>
+            <View style={[styles.statusDot, styles[`${permissionCopy.tone}Dot`]]} />
+            <Text style={[styles.statusBadgeText, styles[`${permissionCopy.tone}Text`]]}>{permissionCopy.badge}</Text>
           </View>
         </View>
 
         <View style={styles.summaryCard}>
           <View style={styles.summaryIcon}>
-            <MaterialCommunityIcons name="shield-check" size={22} color={colors.accent} />
+            <MaterialCommunityIcons name={permissionCopy.icon} size={22} color={colors.accent} />
           </View>
           <View style={styles.summaryText}>
-            <Text style={styles.summaryTitle}>3 uyarı kanalı hazır</Text>
-            <Text style={styles.summaryDesc}>Günlük fiyat, il bazlı takip ve haftalık özet ayarları.</Text>
+            <Text style={styles.summaryTitle}>{permissionCopy.title}</Text>
+            <Text style={styles.summaryDesc}>{loading ? 'Durum kontrol ediliyor.' : permissionCopy.desc}</Text>
+            {permission.granted && (
+              <Text style={styles.tokenText}>Expo token: {formatToken(permission.expoPushToken)}</Text>
+            )}
           </View>
+        </View>
+
+        <View style={styles.actionRow}>
+          <Pressable
+            disabled={permissionBusy}
+            onPress={ensureNotificationAccess}
+            style={({ pressed }) => [styles.actionButton, pressed && styles.pressed, permissionBusy && styles.disabled]}
+          >
+            {permissionBusy ? (
+              <ActivityIndicator color={colors.bg} size="small" />
+            ) : (
+              <MaterialCommunityIcons name="shield-check" size={18} color={colors.bg} />
+            )}
+            <Text style={styles.actionButtonText}>İzni Kontrol Et</Text>
+          </Pressable>
+
+          <Pressable
+            disabled={testBusy}
+            onPress={handleTestNotification}
+            style={({ pressed }) => [styles.ghostButton, pressed && styles.pressed, testBusy && styles.disabled]}
+          >
+            {testBusy ? (
+              <ActivityIndicator color={colors.accent} size="small" />
+            ) : (
+              <MaterialCommunityIcons name="send-check-outline" size={18} color={colors.accent} />
+            )}
+            <Text style={styles.ghostButtonText}>Test Gönder</Text>
+          </Pressable>
         </View>
 
         <View style={styles.panel}>
           <Text style={styles.panelTitle}>Uyarı Ayarları</Text>
 
           {notificationRows.map((row, index) => (
-            <View key={row.title} style={[styles.row, index === 0 && styles.rowFirst]}>
+            <View key={row.key} style={[styles.row, index === 0 && styles.rowFirst]}>
               <View style={styles.rowIcon}>
                 <MaterialCommunityIcons name={row.icon} size={18} color={colors.accent} />
               </View>
@@ -86,10 +247,11 @@ export default function Bildirimler() {
                 <Text style={styles.rowDesc}>{row.desc}</Text>
               </View>
               <Switch
-                value={row.value}
-                onValueChange={row.onValueChange}
-                trackColor={{ false: '#25364F', true: colors.accentDark }}
+                disabled={permissionBusy}
+                onValueChange={(value) => updateSetting(row.key, value)}
                 thumbColor={row.value ? colors.accent : '#D6DEE9'}
+                trackColor={{ false: '#25364F', true: colors.accentDark }}
+                value={row.value}
               />
             </View>
           ))}
@@ -99,13 +261,13 @@ export default function Bildirimler() {
           <View style={styles.panelTop}>
             <View>
               <Text style={styles.panelTitle}>Sessiz Saatler</Text>
-              <Text style={styles.panelSubtitle}>Kritik olmayan bildirimleri duraklat.</Text>
+              <Text style={styles.panelSubtitle}>Kritik olmayan bildirimleri duraklatır.</Text>
             </View>
             <Switch
-              value={quietHours}
-              onValueChange={setQuietHours}
+              onValueChange={(value) => updateSetting('quietHours', value)}
+              thumbColor={settings.quietHours ? colors.accent : '#D6DEE9'}
               trackColor={{ false: '#25364F', true: colors.accentDark }}
-              thumbColor={quietHours ? colors.accent : '#D6DEE9'}
+              value={settings.quietHours}
             />
           </View>
 
@@ -148,7 +310,7 @@ export default function Bildirimler() {
         <View style={styles.infoCard}>
           <MaterialCommunityIcons name="information-outline" size={18} color={colors.accent} />
           <Text style={styles.infoText}>
-            Bildirim izinleri kapalıysa uyarılar yalnızca uygulama içinde gösterilir.
+            {permission.tokenError ?? 'Bu fazda cihaz bildirimi hazır; otomatik fiyat alarmı backend fazında bağlanacak.'}
           </Text>
         </View>
       </ScrollView>
@@ -216,25 +378,51 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     alignItems: 'center',
-    backgroundColor: colors.accentDark,
-    borderColor: colors.accent,
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
+  activeBadge: {
+    backgroundColor: colors.accentDark,
+    borderColor: colors.accent,
+  },
+  pendingBadge: {
+    backgroundColor: colors.bgSoft,
+    borderColor: colors.border,
+  },
+  blockedBadge: {
+    backgroundColor: colors.dangerDark,
+    borderColor: colors.danger,
+  },
   statusDot: {
-    backgroundColor: colors.accent,
     borderRadius: 999,
     height: 7,
     marginRight: 6,
     width: 7,
   },
+  activeDot: {
+    backgroundColor: colors.accent,
+  },
+  pendingDot: {
+    backgroundColor: colors.warning,
+  },
+  blockedDot: {
+    backgroundColor: colors.danger,
+  },
   statusBadgeText: {
-    color: colors.accent,
     fontSize: 11,
     fontWeight: '900',
+  },
+  activeText: {
+    color: colors.accent,
+  },
+  pendingText: {
+    color: colors.warning,
+  },
+  blockedText: {
+    color: colors.danger,
   },
   summaryCard: {
     alignItems: 'center',
@@ -269,6 +457,57 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     marginTop: 4,
+  },
+  tokenText: {
+    color: colors.info,
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 5,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 2,
+  },
+  actionButton: {
+    alignItems: 'center',
+    backgroundColor: colors.accent,
+    borderRadius: 8,
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 12,
+  },
+  actionButtonText: {
+    color: colors.bg,
+    fontSize: 12,
+    fontWeight: '900',
+    marginLeft: 7,
+  },
+  ghostButton: {
+    alignItems: 'center',
+    backgroundColor: colors.bgSoft,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 12,
+  },
+  ghostButtonText: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: '900',
+    marginLeft: 7,
+  },
+  disabled: {
+    opacity: 0.55,
+  },
+  pressed: {
+    opacity: 0.74,
   },
   panel: {
     backgroundColor: colors.surface,
@@ -415,8 +654,9 @@ const styles = StyleSheet.create({
   infoText: {
     color: colors.mutedSoft,
     flex: 1,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    marginLeft: 10,
+    lineHeight: 16,
+    marginLeft: 8,
   },
 })

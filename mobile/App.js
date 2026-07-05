@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { enableScreens } from 'react-native-screens'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
@@ -7,9 +8,11 @@ import AnaSayfa from './src/screens/AnaSayfa'
 import Iller from './src/screens/Iller'
 import Gecmis from './src/screens/Gecmis'
 import Bildirimler from './src/screens/Bildirimler'
+import { configureNotificationHandler, subscribeToNotificationEvents } from './src/services/notifications'
 import { colors } from './src/theme'
 
 enableScreens()
+configureNotificationHandler()
 
 const Tab = createBottomTabNavigator()
 
@@ -28,6 +31,8 @@ const tabIcons = {
 }
 
 export default function App() {
+  useEffect(() => subscribeToNotificationEvents(), [])
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <NavigationContainer>

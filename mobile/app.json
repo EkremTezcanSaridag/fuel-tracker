@@ -19,6 +19,14 @@
             "backgroundColor": "#071426"
           }
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#19E6B1",
+          "defaultChannel": "fuel-alerts"
+        }
       ]
     ],
     "ios": {
@@ -27,6 +35,9 @@
     },
     "android": {
       "package": "com.pompametre.app",
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#071426"
@@ -34,6 +45,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "91a0e2a4-5ebf-484f-aaf2-112efa893c35"
+      }
+    },
+    "owner": "ekoteko12"
   }
 }
