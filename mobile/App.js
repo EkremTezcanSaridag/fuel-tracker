@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import * as SplashScreen from 'expo-splash-screen'
 import { enableScreens } from 'react-native-screens'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
@@ -10,6 +12,8 @@ import Bildirimler from './src/screens/Bildirimler'
 import { colors } from './src/theme'
 
 enableScreens()
+SplashScreen.setOptions({ duration: 250, fade: true })
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 const Tab = createBottomTabNavigator()
 
@@ -28,8 +32,23 @@ const tabIcons = {
 }
 
 export default function App() {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    setReady(true)
+  }, [])
+
+  if (!ready) {
+    return null
+  }
+
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <GestureHandlerRootView
+      onLayout={async () => {
+        await SplashScreen.hideAsync().catch(() => {})
+      }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
+    >
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={({ route }) => ({
