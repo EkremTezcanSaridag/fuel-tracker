@@ -2,7 +2,7 @@
   "expo": {
     "name": "PompaMetre",
     "slug": "pompa-metre",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -35,6 +35,7 @@
     },
     "android": {
       "package": "com.pompametre.app",
+      "versionCode": 2,
       "permissions": [
         "POST_NOTIFICATIONS"
       ],
