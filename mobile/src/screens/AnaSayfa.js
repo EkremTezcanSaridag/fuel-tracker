@@ -4,56 +4,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Text, StyleSheet, useWindowDimensions } from 'react-native'
 import { colors, shadows } from '../theme'
-
-const fuels = [
-  {
-    name: 'Benzin 95',
-    price: '64.12 ₺',
-    change: '-0.45 ₺',
-    tone: 'good',
-    badgeColor: '#4B7FC8',
-  },
-  {
-    name: 'Motorin',
-    price: '66.45 ₺',
-    change: '+0.12 ₺',
-    tone: 'bad',
-    badgeColor: '#60758F',
-  },
-  {
-    name: 'LPG',
-    price: '36.20 ₺',
-    change: '0.00 ₺',
-    tone: 'flat',
-    badgeColor: colors.warning,
-  },
-]
+import { useFuelData } from '../hooks/useFuelData'
 
 const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
-
-const trendSeries = [
-  {
-    key: 'Benzin',
-    color: colors.info,
-    values: [38, 34, 33, 37, 44, 49, 45],
-    strokeWidth: 2,
-    opacity: 0.55,
-  },
-  {
-    key: 'Motorin',
-    color: colors.danger,
-    values: [56, 51, 53, 57, 66, 50, 46],
-    strokeWidth: 4,
-    opacity: 1,
-  },
-  {
-    key: 'LPG',
-    color: colors.warning,
-    values: [24, 23, 23, 24, 24, 25, 25],
-    strokeWidth: 3,
-    opacity: 0.82,
-  },
-]
 
 const chartHeight = 118
 const chartDomain = { min: 20, max: 70 }
@@ -92,6 +45,9 @@ function buildSegments(points, strokeWidth) {
 
 export default function AnaSayfa() {
   const { width } = useWindowDimensions()
+  const { data } = useFuelData()
+  const fuels = data.homeFuels
+  const trendSeries = data.homeTrendSeries
   const chartWidth = Math.max(210, Math.min(width - 92, 330))
 
   const chartSeries = useMemo(
@@ -121,10 +77,10 @@ export default function AnaSayfa() {
         </View>
 
         <View style={styles.metaRow}>
-          <Text style={styles.metaText}>5 Temmuz 2026 Pazar</Text>
+          <Text style={styles.metaText}>{data.currentDateLabel}</Text>
           <View style={styles.updatePill}>
             <MaterialCommunityIcons name="clock-outline" size={12} color={colors.accent} />
-            <Text style={styles.updateText}>Son Güncelleme: 10:45</Text>
+            <Text style={styles.updateText}>Son Güncelleme: {data.lastUpdatedLabel}</Text>
           </View>
         </View>
 

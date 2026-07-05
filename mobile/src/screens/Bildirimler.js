@@ -4,15 +4,17 @@ import { StatusBar } from 'expo-status-bar'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Text, StyleSheet, Switch } from 'react-native'
 import { colors, shadows } from '../theme'
+import { useFuelData } from '../hooks/useFuelData'
 
 const fuelChips = ['Benzin', 'Motorin', 'LPG']
-const cityChips = ['İstanbul', 'Ankara', 'İzmir']
 
 export default function Bildirimler() {
+  const { data } = useFuelData()
   const [dailyAlerts, setDailyAlerts] = useState(true)
   const [cityAlerts, setCityAlerts] = useState(true)
   const [weeklySummary, setWeeklySummary] = useState(false)
   const [quietHours, setQuietHours] = useState(true)
+  const cityChips = data.cities.slice(0, 3).map((city) => city.name)
 
   const notificationRows = [
     {

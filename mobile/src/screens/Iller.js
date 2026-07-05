@@ -3,132 +3,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Text, StyleSheet } from 'react-native'
 import { colors, shadows } from '../theme'
-
-const provinceNames = [
-  'Adana',
-  'Adıyaman',
-  'Afyonkarahisar',
-  'Ağrı',
-  'Amasya',
-  'Ankara',
-  'Antalya',
-  'Artvin',
-  'Aydın',
-  'Balıkesir',
-  'Bilecik',
-  'Bingöl',
-  'Bitlis',
-  'Bolu',
-  'Burdur',
-  'Bursa',
-  'Çanakkale',
-  'Çankırı',
-  'Çorum',
-  'Denizli',
-  'Diyarbakır',
-  'Edirne',
-  'Elazığ',
-  'Erzincan',
-  'Erzurum',
-  'Eskişehir',
-  'Gaziantep',
-  'Giresun',
-  'Gümüşhane',
-  'Hakkari',
-  'Hatay',
-  'Isparta',
-  'Mersin',
-  'İstanbul',
-  'İzmir',
-  'Kars',
-  'Kastamonu',
-  'Kayseri',
-  'Kırklareli',
-  'Kırşehir',
-  'Kocaeli',
-  'Konya',
-  'Kütahya',
-  'Malatya',
-  'Manisa',
-  'Kahramanmaraş',
-  'Mardin',
-  'Muğla',
-  'Muş',
-  'Nevşehir',
-  'Niğde',
-  'Ordu',
-  'Rize',
-  'Sakarya',
-  'Samsun',
-  'Siirt',
-  'Sinop',
-  'Sivas',
-  'Tekirdağ',
-  'Tokat',
-  'Trabzon',
-  'Tunceli',
-  'Şanlıurfa',
-  'Uşak',
-  'Van',
-  'Yozgat',
-  'Zonguldak',
-  'Aksaray',
-  'Bayburt',
-  'Karaman',
-  'Kırıkkale',
-  'Batman',
-  'Şırnak',
-  'Bartın',
-  'Ardahan',
-  'Iğdır',
-  'Yalova',
-  'Karabük',
-  'Kilis',
-  'Osmaniye',
-  'Düzce',
-]
-
-const highlightedCities = {
-  Adana: { price: 63.95, change: -0.12, stations: 386 },
-  Ankara: { price: 64.10, change: 0.03, stations: 842 },
-  Antalya: { price: 64.02, change: -0.05, stations: 438 },
-  İstanbul: { price: 64.12, change: 0.05, stations: 1248 },
-  İzmir: { price: 64.08, change: 0.01, stations: 716 },
-}
-
-function formatPrice(value) {
-  return `${value.toFixed(2)} ₺`
-}
-
-function formatStationCount(value) {
-  return `${String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} istasyon`
-}
-
-const cities = provinceNames.map((name, index) => {
-  const fallbackPrice = 64 + ((index * 7) % 37) / 100
-  const fallbackChange = ((index % 9) - 4) / 100
-  const fallbackStations = 96 + ((index * 37) % 420)
-  const city = highlightedCities[name] ?? {
-    price: fallbackPrice,
-    change: fallbackChange,
-    stations: fallbackStations,
-  }
-
-  return {
-    name,
-    price: formatPrice(city.price),
-    change: `${city.change >= 0 ? '+' : ''}${city.change.toFixed(2)} ₺`,
-    stations: formatStationCount(city.stations),
-  }
-})
-
-const fuelTabs = [
-  { label: 'Benzin', icon: 'gas-station' },
-  { label: 'Motorin', icon: 'truck-outline' },
-  { label: 'LPG', icon: 'fire' },
-]
+import { useFuelData } from '../hooks/useFuelData'
+import { fuelTabs } from '../services/fuelData'
 
 export default function Iller() {
+  const { data } = useFuelData()
+  const cities = data.cities
+  const bestCity = data.bestCity
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="light" />
@@ -174,10 +56,10 @@ export default function Iller() {
             <MaterialCommunityIcons name="trending-down" size={20} color={colors.accent} />
           </View>
           <View style={styles.insightCopy}>
-            <Text style={styles.insightTitle}>En uygun şehir Adana</Text>
-            <Text style={styles.insightDesc}>Bugünkü listede ortalamanın 0.17 ₺ altında.</Text>
+            <Text style={styles.insightTitle}>En uygun şehir {bestCity?.name ?? 'Adana'}</Text>
+            <Text style={styles.insightDesc}>Bugünkü listede en düşük benzin ortalaması.</Text>
           </View>
-          <Text style={styles.insightPrice}>63.95 ₺</Text>
+          <Text style={styles.insightPrice}>{bestCity?.price ?? '63.95 ₺'}</Text>
         </View>
 
         <View style={styles.listHeader}>

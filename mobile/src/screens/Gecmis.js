@@ -4,62 +4,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Text, StyleSheet, useWindowDimensions } from 'react-native'
 import { colors, shadows } from '../theme'
+import { useFuelData } from '../hooks/useFuelData'
 
-const trendSeries = [
-  {
-    key: 'Benzin',
-    color: colors.accent,
-    values: [39.9, 39.7, 39.8, 40.2, 40.8, 40.4, 41.1],
-    strokeWidth: 4,
-  },
-  {
-    key: 'Motorin',
-    color: colors.info,
-    values: [41.2, 41.0, 40.8, 41.4, 41.7, 40.9, 42.0],
-    strokeWidth: 3,
-  },
-  {
-    key: 'LPG',
-    color: colors.warning,
-    values: [20.8, 20.9, 20.9, 21.0, 21.0, 21.1, 21.2],
-    strokeWidth: 3,
-  },
-]
-
-const chartLabels = ['13 Şub', '28 Şub', '15 Mar']
 const chartHeight = 146
-const chartDomain = { min: 20, max: 43 }
 
-const metrics = [
-  { label: 'En Ucuz Gün', value: '12 Mart', icon: 'calendar-month', tone: 'accent' },
-  { label: 'Ortalama Benzin', value: '40.56 ₺', icon: 'gas-station', tone: 'info' },
-]
-
-const recentChanges = [
-  {
-    date: '15 Mart Cuma',
-    tag: 'Benzin',
-    value: '+1.53 TL',
-    desc: 'Gece yarısından itibaren geçerli.',
-    tone: 'up',
-  },
-  {
-    date: '12 Mart Salı',
-    tag: 'Motorin',
-    value: '-1.20 TL',
-    desc: 'İndirim pompa fiyatlarına yansıdı.',
-    tone: 'down',
-  },
-  {
-    date: '05 Mart Salı',
-    tag: 'LPG',
-    value: '+0.85 TL',
-    desc: 'Otogaz fiyatı güncellendi.',
-    tone: 'up',
-  },
-]
-
-function buildPoints(values, chartWidth) {
+function buildPoints(values, chartWidth, chartDomain) {
   const horizontalPadding = 8
   const verticalPadding = 12
   const usableWidth = chartWidth - horizontalPadding * 2
@@ -93,12 +42,18 @@ function buildSegments(points, strokeWidth) {
 
 export default function Gecmis() {
   const { width } = useWindowDimensions()
+  const { data } = useFuelData()
+  const trendSeries = data.historyTrendSeries
+  const chartLabels = data.historyChartLabels
+  const chartDomain = data.historyChartDomain
+  const metrics = data.historyMetrics
+  const recentChanges = data.recentChanges
   const chartWidth = Math.max(218, Math.min(width - 92, 330))
 
   const chartSeries = useMemo(
     () =>
       trendSeries.map((series) => {
-        const points = buildPoints(series.values, chartWidth)
+        const points = buildPoints(series.values, chartWidth, chartDomain)
 
         return {
           ...series,
@@ -106,7 +61,7 @@ export default function Gecmis() {
           segments: buildSegments(points, series.strokeWidth),
         }
       }),
-    [chartWidth],
+    [chartDomain, chartWidth, trendSeries],
   )
 
   return (
