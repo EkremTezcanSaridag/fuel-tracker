@@ -10,7 +10,7 @@ import {
   getNotificationPermissionStatus,
   loadNotificationSettings,
   requestNotificationAccess,
-  saveNotificationSettings,
+  saveAndSyncNotificationSettings,
   sendTestNotification,
 } from '../services/notifications'
 
@@ -68,13 +68,21 @@ export default function Bildirimler() {
   const [permissionBusy, setPermissionBusy] = useState(false)
   const [testBusy, setTestBusy] = useState(false)
   const cityChips = data.cities.slice(0, 3).map((city) => city.name)
+  const registrationMeta = useMemo(
+    () => ({
+      trackedCities: cityChips,
+      trackedFuels: fuelChips,
+    }),
+    [cityChips.join('|')],
+  )
   const permissionCopy = getPermissionCopy(permission)
 
   useEffect(() => {
     let isMounted = true
 
-    Promise.all([loadNotificationSettings(), getNotificationPermissionStatus()]).then(
-      ([storedSettings, currentPermission]) => {
+    loadNotificationSettings().then(async (storedSettings) => {
+      const currentPermission = await getNotificationPermissionStatus(storedSettings, registrationMeta)
+
         if (!isMounted) {
           return
         }
@@ -82,13 +90,12 @@ export default function Bildirimler() {
         setSettings(storedSettings)
         setPermission(currentPermission)
         setLoading(false)
-      },
-    )
+    })
 
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [registrationMeta])
 
   const notificationRows = useMemo(
     () => [
@@ -120,7 +127,7 @@ export default function Bildirimler() {
   async function ensureNotificationAccess() {
     setPermissionBusy(true)
 
-    const nextPermission = await requestNotificationAccess()
+    const nextPermission = await requestNotificationAccess(settings, registrationMeta)
 
     setPermission(nextPermission)
     setPermissionBusy(false)
@@ -148,7 +155,14 @@ export default function Bildirimler() {
     }
 
     setSettings(nextSettings)
-    await saveNotificationSettings(nextSettings)
+    const registration = await saveAndSyncNotificationSettings(nextSettings, permission.expoPushToken, registrationMeta)
+
+    if (registration.error) {
+      setPermission((current) => ({
+        ...current,
+        tokenError: registration.error,
+      }))
+    }
   }
 
   async function handleTestNotification() {
