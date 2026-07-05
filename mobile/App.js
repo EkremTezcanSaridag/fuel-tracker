@@ -15,8 +15,8 @@ const Tab = createBottomTabNavigator()
 
 const tabs = {
   home: 'Ana Sayfa',
-  cities: '\u0130ller',
-  history: 'Ge\u00e7mi\u015f',
+  cities: 'İller',
+  history: 'Geçmiş',
   alerts: 'Bildirimler',
 }
 

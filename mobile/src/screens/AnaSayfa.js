@@ -8,28 +8,28 @@ import { colors, shadows } from '../theme'
 const fuels = [
   {
     name: 'Benzin 95',
-    price: '64.12 \u20ba',
-    change: '-0.45 \u20ba',
+    price: '64.12 ₺',
+    change: '-0.45 ₺',
     tone: 'good',
     badgeColor: '#4B7FC8',
   },
   {
     name: 'Motorin',
-    price: '66.45 \u20ba',
-    change: '+0.12 \u20ba',
+    price: '66.45 ₺',
+    change: '+0.12 ₺',
     tone: 'bad',
     badgeColor: '#60758F',
   },
   {
     name: 'LPG',
-    price: '36.20 \u20ba',
-    change: '0.00 \u20ba',
+    price: '36.20 ₺',
+    change: '0.00 ₺',
     tone: 'flat',
     badgeColor: colors.warning,
   },
 ]
 
-const days = ['Pzt', 'Sal', '\u00c7ar', 'Per', 'Cum', 'Cmt', 'Paz']
+const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 
 const trendSeries = [
   {
@@ -124,7 +124,7 @@ export default function AnaSayfa() {
           <Text style={styles.metaText}>5 Temmuz 2026 Pazar</Text>
           <View style={styles.updatePill}>
             <MaterialCommunityIcons name="clock-outline" size={12} color={colors.accent} />
-            <Text style={styles.updateText}>Son G\u00fcncelleme: 10:45</Text>
+            <Text style={styles.updateText}>Son Güncelleme: 10:45</Text>
           </View>
         </View>
 
@@ -155,7 +155,7 @@ export default function AnaSayfa() {
 
         <View style={styles.chartCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>7 G\u00fcnl\u00fck De\u011fi\u015fim</Text>
+            <Text style={styles.sectionTitle}>7 Günlük Değişim</Text>
             <MaterialCommunityIcons name="chart-line" size={17} color={colors.mutedSoft} />
           </View>
 
