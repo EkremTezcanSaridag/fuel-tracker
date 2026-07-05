@@ -1,20 +1,61 @@
+import { useMemo, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Text, StyleSheet } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, View, Text, StyleSheet } from 'react-native'
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 
+function formatCurrency(value) {
+  return `${value.toFixed(2)} ₺`
+}
+
+function formatChange(value) {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)} ₺`
+}
+
+function formatStationCount(value) {
+  return `${String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} istasyon`
+}
+
 export default function Iller() {
-  const { data } = useFuelData()
-  const cities = data.cities
-  const bestCity = data.bestCity
+  const { data, refresh, refreshing } = useFuelData()
+  const [selectedFuel, setSelectedFuel] = useState(fuelTabs[0])
+  const selectedFuelKey = selectedFuel.key
+  const selectedFuelTitle = selectedFuel.title
+
+  const cities = useMemo(
+    () =>
+      [...data.prices]
+        .sort((first, second) => first[selectedFuelKey] - second[selectedFuelKey])
+        .map((city) => ({
+          name: city.city,
+          price: formatCurrency(city[selectedFuelKey]),
+          change: formatChange(city.change),
+          stations: formatStationCount(city.stations),
+        })),
+    [data.prices, selectedFuelKey],
+  )
+
+  const bestCity = cities[0]
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            colors={[colors.accent]}
+            onRefresh={refresh}
+            progressBackgroundColor={colors.surface}
+            refreshing={refreshing}
+            tintColor={colors.accent}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <View style={styles.headerMark}>
             <MaterialCommunityIcons name="map-marker" size={18} color={colors.accent} />
@@ -31,24 +72,45 @@ export default function Iller() {
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
             <Text style={styles.title}>Şehir Bazlı Fiyatlar</Text>
-            <Text style={styles.subtitle}>Benzin için günlük ortalama fiyatlar.</Text>
+            <Text style={styles.subtitle}>{selectedFuelTitle} için günlük ortalama fiyatlar.</Text>
           </View>
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{cities.length} İl</Text>
+          <View style={styles.titleActions}>
+            <Pressable
+              accessibilityLabel="Fiyatları yenile"
+              onPress={refresh}
+              style={({ pressed }) => [styles.refreshButton, pressed && styles.pressed]}
+            >
+              <MaterialCommunityIcons
+                name="refresh"
+                size={17}
+                color={refreshing ? colors.mutedSoft : colors.accent}
+              />
+            </Pressable>
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{cities.length} İl</Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.segmentRow}>
-          {fuelTabs.map((item, index) => (
-            <View key={item.label} style={[styles.segment, index === 0 && styles.segmentActive]}>
-              <MaterialCommunityIcons
-                name={item.icon}
-                size={14}
-                color={index === 0 ? colors.accent : colors.mutedSoft}
-              />
-              <Text style={[styles.segmentText, index === 0 && styles.segmentTextActive]}>{item.label}</Text>
-            </View>
-          ))}
+          {fuelTabs.map((item) => {
+            const selected = item.key === selectedFuel.key
+
+            return (
+              <Pressable
+                key={item.key}
+                onPress={() => setSelectedFuel(item)}
+                style={({ pressed }) => [styles.segment, selected && styles.segmentActive, pressed && styles.pressed]}
+              >
+                <MaterialCommunityIcons
+                  name={item.icon}
+                  size={14}
+                  color={selected ? colors.accent : colors.mutedSoft}
+                />
+                <Text style={[styles.segmentText, selected && styles.segmentTextActive]}>{item.label}</Text>
+              </Pressable>
+            )
+          })}
         </View>
 
         <View style={styles.insightCard}>
@@ -57,14 +119,14 @@ export default function Iller() {
           </View>
           <View style={styles.insightCopy}>
             <Text style={styles.insightTitle}>En uygun şehir {bestCity?.name ?? 'Adana'}</Text>
-            <Text style={styles.insightDesc}>Bugünkü listede en düşük benzin ortalaması.</Text>
+            <Text style={styles.insightDesc}>Bugünkü listede en düşük {selectedFuelTitle} fiyatı.</Text>
           </View>
           <Text style={styles.insightPrice}>{bestCity?.price ?? '63.95 ₺'}</Text>
         </View>
 
         <View style={styles.listHeader}>
           <Text style={styles.listTitle}>Şehir Listesi</Text>
-          <Text style={styles.listMeta}>Benzin 95</Text>
+          <Text style={styles.listMeta}>{selectedFuelTitle}</Text>
         </View>
 
         {cities.map((city, index) => {
@@ -170,6 +232,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 12,
   },
+  titleActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
   title: {
     color: colors.text,
     fontSize: 21,
@@ -193,6 +259,20 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 11,
     fontWeight: '900',
+  },
+  refreshButton: {
+    alignItems: 'center',
+    backgroundColor: colors.bgSoft,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    marginRight: 8,
+    width: 34,
+  },
+  pressed: {
+    opacity: 0.72,
   },
   segmentRow: {
     flexDirection: 'row',

@@ -2,9 +2,9 @@ import { colors } from '../theme'
 import { supabase } from '../supabase'
 
 export const fuelTabs = [
-  { label: 'Benzin', icon: 'gas-station' },
-  { label: 'Motorin', icon: 'truck-outline' },
-  { label: 'LPG', icon: 'fire' },
+  { key: 'benzin95', label: 'Benzin', title: 'Benzin 95', icon: 'gas-station' },
+  { key: 'motorin', label: 'Mazot', title: 'Mazot', icon: 'truck-outline' },
+  { key: 'lpg', label: 'LPG', title: 'LPG', icon: 'fire' },
 ]
 
 export const provinceNames = [

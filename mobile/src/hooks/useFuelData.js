@@ -1,11 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { fallbackFuelData, loadFuelData } from '../services/fuelData'
 
 export function useFuelData() {
   const [state, setState] = useState({
     data: fallbackFuelData,
     loading: true,
+    refreshing: false,
   })
+
+  const refresh = useCallback(async () => {
+    setState((current) => ({
+      ...current,
+      refreshing: true,
+    }))
+
+    const data = await loadFuelData({ refresh: true })
+
+    setState({
+      data,
+      loading: false,
+      refreshing: false,
+    })
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -18,6 +34,7 @@ export function useFuelData() {
       setState({
         data,
         loading: false,
+        refreshing: false,
       })
     })
 
@@ -26,5 +43,8 @@ export function useFuelData() {
     }
   }, [])
 
-  return state
+  return {
+    ...state,
+    refresh,
+  }
 }
