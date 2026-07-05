@@ -6,7 +6,7 @@ PompaMetre, Türkiye'deki akaryakıt fiyatlarını takip etmek için geliştiril
 
 ## İndir
 
-[PompaMetre APK](https://expo.dev/artifacts/eas/YAYW-dXQ3CA7FaADnOy5Z9gZhYL9EgMF_t_uvsWcYnU.apk)
+[PompaMetre APK](https://expo.dev/artifacts/eas/aNCNLkGb-n-ZDincF11sqM16xxdWXHsCkF9QooDEryI.apk)
 
 ## Özellikler
 
