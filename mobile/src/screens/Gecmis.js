@@ -171,8 +171,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   trendCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 8,
+    borderWidth: 1,
     padding: 14,
     ...shadows.card,
   },
@@ -183,7 +185,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionLabel: {
-    color: colors.paperMuted,
+    color: colors.mutedSoft,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -206,12 +208,12 @@ const styles = StyleSheet.create({
     width: 8,
   },
   legendText: {
-    color: colors.paperMuted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: '800',
   },
   smallBadge: {
-    backgroundColor: colors.bg,
+    backgroundColor: colors.bgSoft,
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
@@ -225,7 +227,9 @@ const styles = StyleSheet.create({
   },
   chartBox: {
     backgroundColor: colors.bg,
+    borderColor: colors.border,
     borderRadius: 8,
+    borderWidth: 1,
     height: 170,
     position: 'relative',
     overflow: 'hidden',
@@ -315,8 +319,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   changesCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 8,
+    borderWidth: 1,
     ...shadows.card,
   },
   changeRow: {
@@ -327,7 +333,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   changeDivider: {
-    borderBottomColor: '#E6EDF5',
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
   },
   changeLeft: {
@@ -338,7 +344,7 @@ const styles = StyleSheet.create({
   },
   changeDotWrap: {
     alignItems: 'center',
-    backgroundColor: '#F1F6FC',
+    backgroundColor: colors.bgSoft,
     borderRadius: 999,
     height: 28,
     justifyContent: 'center',
@@ -352,24 +358,26 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   changeDate: {
-    color: colors.paperText,
+    color: colors.text,
     fontSize: 13,
     fontWeight: '800',
   },
   changeDesc: {
-    color: colors.paperMuted,
+    color: colors.mutedSoft,
     fontSize: 11,
     fontWeight: '600',
     marginTop: 4,
   },
   changeTag: {
-    backgroundColor: '#F1F6FC',
+    backgroundColor: colors.bgSoft,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   changeTagText: {
-    color: colors.paperText,
+    color: colors.mutedSoft,
     fontSize: 10,
     fontWeight: '800',
   },

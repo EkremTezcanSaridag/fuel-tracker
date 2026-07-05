@@ -56,6 +56,9 @@ export default function App() {
             },
             tabBarActiveTintColor: colors.accent,
             tabBarInactiveTintColor: colors.muted,
+            sceneStyle: {
+              backgroundColor: colors.bg,
+            },
           })}
         >
           <Tab.Screen name={tabs.home} component={AnaSayfa} />
