@@ -124,12 +124,13 @@ export default function Gecmis() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.paper,
+    backgroundColor: colors.bg,
   },
   content: {
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 24,
+    backgroundColor: colors.bg,
   },
   header: {
     alignItems: 'center',
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   subtitle: {
-    color: colors.paperMuted,
+    color: colors.muted,
     fontSize: 13,
     fontWeight: '700',
     marginTop: 4,
@@ -307,7 +308,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   changesTitle: {
-    color: colors.paperText,
+    color: colors.text,
     fontSize: 20,
     fontWeight: '900',
     marginTop: 24,
