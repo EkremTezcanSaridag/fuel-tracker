@@ -4,6 +4,10 @@
 
 PompaMetre, Türkiye'deki akaryakıt fiyatlarını takip etmek için geliştirilen Expo + React Native mobil uygulamasıdır. Uygulama 81 il için Benzin, Mazot ve LPG fiyatlarını gösterir; şehir arama, yakıt türü filtreleme, yenileme ve fiyat geçmişi ekranlarını içerir.
 
+## İndir
+
+[PompaMetre APK](https://expo.dev/artifacts/eas/z2dJlb8YuQArdN4qYYzc1VIxgStvrt-xa0RB15Rb9wM.apk)
+
 ## Özellikler
 
 - 81 il için akaryakıt fiyat listesi
