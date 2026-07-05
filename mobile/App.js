@@ -1,50 +1,69 @@
 import { enableScreens } from 'react-native-screens'
-enableScreens()
-import { Text } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import AnaSayfa from './src/screens/AnaSayfa'
 import Iller from './src/screens/Iller'
 import Gecmis from './src/screens/Gecmis'
+import Bildirimler from './src/screens/Bildirimler'
+import { colors } from './src/theme'
+
+enableScreens()
 
 const Tab = createBottomTabNavigator()
 
+const tabs = {
+  home: 'Ana Sayfa',
+  cities: '\u0130ller',
+  history: 'Ge\u00e7mi\u015f',
+  alerts: 'Bildirimler',
+}
+
 const tabIcons = {
-  'Ana Sayfa': 'H',
-  'İller': 'I',
-  'Geçmiş': 'G',
+  [tabs.home]: 'home',
+  [tabs.cities]: 'map-marker',
+  [tabs.history]: 'history',
+  [tabs.alerts]: 'bell-outline',
 }
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 14, fontWeight: '900' }}>
-              {tabIcons[route.name]}
-            </Text>
-          ),
-          tabBarStyle: {
-            backgroundColor: '#071426',
-            borderTopColor: '#142844',
-            height: 64,
-            paddingBottom: 8,
-            paddingTop: 6,
-          },
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '700',
-          },
-          tabBarActiveTintColor: '#19E6B1',
-          tabBarInactiveTintColor: '#8FA3B8',
-        })}
-      >
-        <Tab.Screen name="Ana Sayfa" component={AnaSayfa} />
-        <Tab.Screen name="İller" component={Iller} />
-        <Tab.Screen name="Geçmiş" component={Gecmis} />
-      </Tab.Navigator>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name={tabIcons[route.name]} color={color} size={size ?? 22} />
+            ),
+            tabBarLabelStyle: {
+              fontSize: 11,
+              fontWeight: '700',
+              marginBottom: 2,
+            },
+            tabBarItemStyle: {
+              paddingTop: 4,
+              paddingBottom: 2,
+            },
+            tabBarStyle: {
+              backgroundColor: colors.bg,
+              borderTopColor: colors.border,
+              borderTopWidth: 1,
+              height: 70,
+              paddingTop: 8,
+              paddingBottom: 10,
+            },
+            tabBarActiveTintColor: colors.accent,
+            tabBarInactiveTintColor: colors.muted,
+          })}
+        >
+          <Tab.Screen name={tabs.home} component={AnaSayfa} />
+          <Tab.Screen name={tabs.cities} component={Iller} />
+          <Tab.Screen name={tabs.history} component={Gecmis} />
+          <Tab.Screen name={tabs.alerts} component={Bildirimler} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   )
 }
