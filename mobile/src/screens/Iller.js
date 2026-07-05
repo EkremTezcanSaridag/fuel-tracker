@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Pressable, RefreshControl, ScrollView, View, Text, StyleSheet } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native'
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
@@ -19,26 +19,43 @@ function formatStationCount(value) {
   return `${String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} istasyon`
 }
 
+function normalizeSearch(value) {
+  return value
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[çÇ]/g, 'c')
+    .replace(/[ğĞ]/g, 'g')
+    .replace(/[ıIİi]/g, 'i')
+    .replace(/[öÖ]/g, 'o')
+    .replace(/[şŞ]/g, 's')
+    .replace(/[üÜ]/g, 'u')
+}
+
 export default function Iller() {
   const { data, refresh, refreshing } = useFuelData()
   const [selectedFuel, setSelectedFuel] = useState(fuelTabs[0])
+  const [searchQuery, setSearchQuery] = useState('')
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
 
   const cities = useMemo(
-    () =>
-      [...data.prices]
+    () => {
+      const normalizedQuery = normalizeSearch(searchQuery.trim())
+
+      return [...data.prices]
+        .filter((city) => !normalizedQuery || normalizeSearch(city.city).includes(normalizedQuery))
         .sort((first, second) => first[selectedFuelKey] - second[selectedFuelKey])
         .map((city) => ({
           name: city.city,
           price: formatCurrency(city[selectedFuelKey]),
           change: formatChange(city.change),
           stations: formatStationCount(city.stations),
-        })),
-    [data.prices, selectedFuelKey],
+        }))
+    },
+    [data.prices, searchQuery, selectedFuelKey],
   )
 
   const bestCity = cities[0]
+  const hasSearchQuery = searchQuery.trim().length > 0
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -66,7 +83,26 @@ export default function Iller() {
 
         <View style={styles.searchBox}>
           <MaterialCommunityIcons name="magnify" size={18} color={colors.accent} />
-          <Text style={styles.searchText}>İl ara...</Text>
+          <TextInput
+            autoCapitalize="words"
+            autoCorrect={false}
+            onChangeText={setSearchQuery}
+            placeholder="İl ara..."
+            placeholderTextColor={colors.mutedSoft}
+            returnKeyType="search"
+            selectionColor={colors.accent}
+            style={styles.searchInput}
+            value={searchQuery}
+          />
+          {hasSearchQuery && (
+            <Pressable
+              accessibilityLabel="Aramayı temizle"
+              onPress={() => setSearchQuery('')}
+              style={({ pressed }) => [styles.clearSearchButton, pressed && styles.pressed]}
+            >
+              <MaterialCommunityIcons name="close" size={15} color={colors.mutedSoft} />
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.titleRow}>
@@ -118,16 +154,30 @@ export default function Iller() {
             <MaterialCommunityIcons name="trending-down" size={20} color={colors.accent} />
           </View>
           <View style={styles.insightCopy}>
-            <Text style={styles.insightTitle}>En uygun şehir {bestCity?.name ?? 'Adana'}</Text>
-            <Text style={styles.insightDesc}>Bugünkü listede en düşük {selectedFuelTitle} fiyatı.</Text>
+            <Text style={styles.insightTitle}>
+              {bestCity ? `En uygun şehir ${bestCity.name}` : 'Sonuç bulunamadı'}
+            </Text>
+            <Text style={styles.insightDesc}>
+              {bestCity
+                ? `Bugünkü listede en düşük ${selectedFuelTitle} fiyatı.`
+                : 'Aramayı temizleyip tekrar deneyebilirsiniz.'}
+            </Text>
           </View>
-          <Text style={styles.insightPrice}>{bestCity?.price ?? '63.95 ₺'}</Text>
+          <Text style={styles.insightPrice}>{bestCity?.price ?? '--'}</Text>
         </View>
 
         <View style={styles.listHeader}>
           <Text style={styles.listTitle}>Şehir Listesi</Text>
           <Text style={styles.listMeta}>{selectedFuelTitle}</Text>
         </View>
+
+        {cities.length === 0 && (
+          <View style={styles.emptyCard}>
+            <MaterialCommunityIcons name="map-search-outline" size={28} color={colors.accent} />
+            <Text style={styles.emptyTitle}>İl bulunamadı</Text>
+            <Text style={styles.emptyText}>Arama metnini kısaltarak tekrar deneyin.</Text>
+          </View>
+        )}
 
         {cities.map((city, index) => {
           const trendUp = city.change.startsWith('+')
@@ -216,11 +266,25 @@ const styles = StyleSheet.create({
     minHeight: 50,
     paddingHorizontal: 14,
   },
-  searchText: {
+  searchInput: {
     color: colors.mutedSoft,
+    flex: 1,
     fontSize: 14,
     fontWeight: '800',
     marginLeft: 10,
+    minHeight: 44,
+    paddingVertical: 0,
+  },
+  clearSearchButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 28,
+    justifyContent: 'center',
+    marginLeft: 8,
+    width: 28,
   },
   titleRow: {
     alignItems: 'flex-start',
@@ -370,6 +434,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     ...shadows.soft,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 24,
+    ...shadows.soft,
+  },
+  emptyTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '900',
+    marginTop: 10,
+  },
+  emptyText: {
+    color: colors.mutedSoft,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 5,
+    textAlign: 'center',
   },
   rankBox: {
     alignItems: 'center',
