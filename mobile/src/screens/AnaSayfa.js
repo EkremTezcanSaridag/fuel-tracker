@@ -105,7 +105,9 @@ export default function AnaSayfa() {
           <Text style={styles.metaText}>{data.currentDateLabel}</Text>
           <View style={styles.updatePill}>
             <MaterialCommunityIcons name="clock-outline" size={12} color={colors.accent} />
-            <Text style={styles.updateText}>Son Güncelleme: {data.lastUpdatedLabel}</Text>
+            <Text style={styles.updateText}>
+              {refreshing ? 'Yenileniyor...' : `Son Güncelleme: ${data.lastUpdatedLabel}`}
+            </Text>
           </View>
         </View>
 

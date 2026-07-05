@@ -185,19 +185,8 @@ function formatTodayLabel() {
   return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()} ${weekDayNames[date.getDay()]}`
 }
 
-function formatUpdatedLabel(value) {
-  if (!value) {
-    return '10:45'
-  }
-
-  const date = new Date(String(value).replace(' ', 'T'))
-
-  if (!Number.isNaN(date.getTime())) {
-    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-  }
-
-  const timeMatch = String(value).match(/\d{1,2}:\d{2}/)
-  return timeMatch?.[0] ?? '10:45'
+function formatSyncTime(date = new Date()) {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`
 }
 
 function getFallbackCity(name, index) {
@@ -454,9 +443,8 @@ function buildRecentChanges(history) {
   })
 }
 
-function buildFuelData({ prices, history, source, error }) {
+function buildFuelData({ prices, history, source, error, syncedAt = new Date() }) {
   const cityRows = buildCityRows(prices)
-  const latestUpdatedAt = prices.find((item) => item.updatedAt)?.updatedAt
 
   return {
     bestCity: cityRows[0],
@@ -478,7 +466,7 @@ function buildFuelData({ prices, history, source, error }) {
     historyTrendSeries: buildHistoryTrendSeries(history),
     homeFuels: buildHomeFuels(prices, history),
     homeTrendSeries: buildHomeTrendSeries(history),
-    lastUpdatedLabel: formatUpdatedLabel(latestUpdatedAt),
+    lastUpdatedLabel: formatSyncTime(syncedAt),
     prices,
     recentChanges: buildRecentChanges(history),
     source,
@@ -523,6 +511,15 @@ const fallbackFuelData = buildFuelData({
   source: 'fallback',
 })
 
+function createFallbackFuelData(error) {
+  return buildFuelData({
+    error,
+    history: fallbackHistory,
+    prices: createFallbackPrices(),
+    source: 'fallback',
+  })
+}
+
 let fuelDataCache = null
 
 export async function loadFuelData({ refresh = false } = {}) {
@@ -533,12 +530,9 @@ export async function loadFuelData({ refresh = false } = {}) {
   try {
     const remoteFuelData = await fetchRemoteFuelData()
 
-    fuelDataCache = remoteFuelData ? buildFuelData(remoteFuelData) : fallbackFuelData
+    fuelDataCache = remoteFuelData ? buildFuelData(remoteFuelData) : createFallbackFuelData()
   } catch (error) {
-    fuelDataCache = {
-      ...fallbackFuelData,
-      error,
-    }
+    fuelDataCache = createFallbackFuelData(error)
   }
 
   return fuelDataCache
