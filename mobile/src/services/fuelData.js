@@ -160,6 +160,25 @@ const fallbackMarketSignal = {
   title: signalToneConfig.neutral.title,
   updatedAt: '--',
 }
+const brentSources = [
+  {
+    dateField: 'Date',
+    name: 'DataHub Brent Daily',
+    priceFields: ['Price'],
+    url: 'https://datahub.io/core/oil-prices/r/brent-daily.csv',
+  },
+  {
+    dateField: 'observation_date',
+    name: 'FRED DCOILBRENTEU',
+    priceFields: ['DCOILBRENTEU', 'Price'],
+    url: 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILBRENTEU',
+  },
+]
+const fuelSignalFactors = {
+  Benzin: 1,
+  Motorin: 1.12,
+  LPG: 0.72,
+}
 const monthNames = [
   'Ocak',
   'Şubat',
@@ -193,6 +212,20 @@ function parseFuelValue(value) {
       .replace(/\s/g, '')
       .replace(',', '.'),
   )
+
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseMarketNumber(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const parsed = Number.parseFloat(value.trim().replace(',', '.'))
 
   return Number.isFinite(parsed) ? parsed : null
 }
@@ -265,6 +298,96 @@ function formatPercentValue(value) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
 }
 
+function formatSummaryPercent(value) {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+}
+
+function parseCsvRows(csvText) {
+  const lines = csvText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  if (lines.length < 2) {
+    return []
+  }
+
+  const headers = lines[0].split(',').map((header) => header.trim())
+
+  return lines.slice(1).map((line) => {
+    const columns = line.split(',')
+
+    return headers.reduce((row, header, index) => {
+      row[header] = columns[index]?.trim()
+      return row
+    }, {})
+  })
+}
+
+function parseMarketDate(value) {
+  const date = new Date(`${value}T00:00:00`)
+
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function compareMarketDates(first, second) {
+  return first.date.getTime() - second.date.getTime()
+}
+
+function percentChange(current, previous) {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) {
+    return 0
+  }
+
+  return Number.parseFloat((((current - previous) / previous) * 100).toFixed(2))
+}
+
+function safeHistoryValue(records, offset, field) {
+  if (!records.length) {
+    return null
+  }
+
+  const index = Math.max(0, records.length - 1 - offset)
+
+  return records[index]?.[field] ?? null
+}
+
+function multiplyMarketValues(first, second) {
+  if (!Number.isFinite(first) || !Number.isFinite(second)) {
+    return null
+  }
+
+  return first * second
+}
+
+function resolveSignalDirection(indexChange3d, indexChange7d) {
+  const decisiveChange = Math.abs(indexChange3d) >= 2.5 ? indexChange3d : indexChange7d
+
+  if (decisiveChange >= 2.5) {
+    return 'increase'
+  }
+
+  if (decisiveChange <= -2.5) {
+    return 'decrease'
+  }
+
+  return 'neutral'
+}
+
+function resolveSignalConfidence(indexChange3d, indexChange7d) {
+  const pressure = Math.max(Math.abs(indexChange3d), Math.abs(indexChange7d))
+
+  if (pressure >= 5) {
+    return 'high'
+  }
+
+  if (pressure >= 2.5) {
+    return 'medium'
+  }
+
+  return 'low'
+}
+
 function parseJsonList(value) {
   if (Array.isArray(value)) {
     return value
@@ -293,6 +416,226 @@ function normalizeSignalConfidence(confidence) {
 
 function buildFuelSignalLabel(direction) {
   return signalToneConfig[normalizeSignalDirection(direction)].title
+}
+
+async function fetchText(url, timeoutMs = 10000) {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+  const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'text/plain, application/xml, text/xml, */*',
+      },
+      signal: controller?.signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`Kaynak yanit vermedi: ${response.status}`)
+    }
+
+    return response.text()
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+  }
+}
+
+async function fetchBrentHistory(limit = 12) {
+  let lastError = null
+
+  for (const source of brentSources) {
+    try {
+      const text = await fetchText(source.url)
+      const records = parseCsvRows(text)
+        .map((row) => {
+          const dateValue = row[source.dateField] ?? row.Date
+          const price = source.priceFields.reduce(
+            (selected, field) => selected ?? parseMarketNumber(row[field]),
+            null,
+          )
+          const date = dateValue ? parseMarketDate(dateValue) : null
+
+          if (!date || price === null) {
+            return null
+          }
+
+          return {
+            date,
+            price,
+            source: source.name,
+            sourceUrl: source.url,
+          }
+        })
+        .filter(Boolean)
+        .sort(compareMarketDates)
+
+      if (records.length) {
+        return records.slice(-limit)
+      }
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError ?? new Error('Brent verisi alınamadı.')
+}
+
+async function fetchUsdTryToday() {
+  return fetchUsdTryForDate(new Date())
+}
+
+function padDatePart(value) {
+  return String(value).padStart(2, '0')
+}
+
+function createDateOffset(daysAgo) {
+  const date = new Date()
+
+  date.setDate(date.getDate() - daysAgo)
+
+  return date
+}
+
+function buildTcmbUrl(date) {
+  const today = new Date()
+  const isToday = date.toDateString() === today.toDateString()
+
+  if (isToday) {
+    return 'https://www.tcmb.gov.tr/kurlar/today.xml'
+  }
+
+  const day = padDatePart(date.getDate())
+  const month = padDatePart(date.getMonth() + 1)
+  const year = date.getFullYear()
+
+  return `https://www.tcmb.gov.tr/kurlar/${year}${month}/${day}${month}${year}.xml`
+}
+
+async function fetchUsdTryForDate(date, timeoutMs = 8000) {
+  const url = buildTcmbUrl(date)
+  const text = await fetchText(url, timeoutMs)
+  const usdMatch = text.match(/<Currency[^>]+CurrencyCode="USD"[\s\S]*?<\/Currency>/)
+  const usdBlock = usdMatch?.[0] ?? ''
+  const selling = usdBlock.match(/<ForexSelling>([^<]+)<\/ForexSelling>/)?.[1]
+  const buying = usdBlock.match(/<ForexBuying>([^<]+)<\/ForexBuying>/)?.[1]
+  const rate = parseMarketNumber(selling) ?? parseMarketNumber(buying)
+
+  if (rate === null) {
+    throw new Error('TCMB USD/TL verisi alınamadı.')
+  }
+
+  return {
+    date,
+    rate,
+    source: 'TCMB',
+    sourceUrl: url,
+  }
+}
+
+async function fetchUsdTryNearOffset(daysAgo) {
+  for (let extraDays = 0; extraDays < 5; extraDays += 1) {
+    try {
+      return await fetchUsdTryForDate(createDateOffset(daysAgo + extraDays), 5000)
+    } catch {}
+  }
+
+  return null
+}
+
+async function fetchUsdTrySnapshot() {
+  const [current, previous3d, previous7d] = await Promise.all([
+    fetchUsdTryToday(),
+    fetchUsdTryNearOffset(3),
+    fetchUsdTryNearOffset(7),
+  ])
+
+  return {
+    current,
+    previous3d: previous3d ?? current,
+    previous7d: previous7d ?? previous3d ?? current,
+  }
+}
+
+function buildLiveFuelSignals(direction, confidence, score) {
+  return Object.entries(fuelSignalFactors).map(([fuel, factor]) => {
+    const fuelScore = Math.min(100, Math.round(score * factor))
+    const fuelDirection = fuel === 'LPG' && fuelScore < 42 ? 'neutral' : direction
+    const fuelConfidence = fuel === 'LPG' && fuelScore < 42 ? 'low' : confidence
+
+    return {
+      confidence: fuelConfidence,
+      confidenceLabel: confidenceLabels[fuelConfidence],
+      direction: fuelDirection,
+      fuel,
+      label: buildFuelSignalLabel(fuelDirection),
+      score: fuelScore,
+    }
+  })
+}
+
+function buildLiveMarketSummary(direction, confidence, indexChange3d, indexChange7d, brentChange3d, usdChange3d) {
+  const confidenceText = {
+    high: 'güçlü',
+    medium: 'orta',
+    low: 'düşük',
+  }[confidence]
+  const decisiveDays = Math.abs(indexChange3d) >= 2.5 ? 3 : 7
+  const decisiveChange = decisiveDays === 3 ? indexChange3d : indexChange7d
+
+  if (direction === 'increase') {
+    return `Brent TL endeksi ${decisiveDays} piyasa gününde ${formatSummaryPercent(decisiveChange)} yükseldi. Brent ${formatSummaryPercent(brentChange3d)}, USD/TL ${formatSummaryPercent(usdChange3d)} hareket etti; yukarı yönlü ${confidenceText} sinyal oluştu.`
+  }
+
+  if (direction === 'decrease') {
+    return `Brent TL endeksi ${decisiveDays} piyasa gününde ${formatSummaryPercent(Math.abs(decisiveChange))} geriledi. Brent ${formatSummaryPercent(brentChange3d)}, USD/TL ${formatSummaryPercent(usdChange3d)} hareket etti; aşağı yönlü ${confidenceText} sinyal oluştu.`
+  }
+
+  return `Brent TL endeksi 3 piyasa gününde ${formatSummaryPercent(indexChange3d)} değişti. Pompa fiyatları için belirgin bir yukarı ya da aşağı baskı oluşmadı.`
+}
+
+async function fetchLiveMarketSignal() {
+  const [brentHistory, usdTry] = await Promise.all([fetchBrentHistory(), fetchUsdTrySnapshot()])
+  const latestBrent = brentHistory[brentHistory.length - 1]
+  const previousBrent3d = safeHistoryValue(brentHistory, 3, 'price')
+  const previousBrent7d = safeHistoryValue(brentHistory, 7, 'price')
+  const currentIndex = multiplyMarketValues(latestBrent?.price, usdTry.current.rate)
+  const index3d = multiplyMarketValues(previousBrent3d, usdTry.previous3d.rate)
+  const index7d = multiplyMarketValues(previousBrent7d, usdTry.previous7d.rate)
+
+  if (!Number.isFinite(currentIndex) || !Number.isFinite(index3d) || !Number.isFinite(index7d)) {
+    throw new Error('Piyasa sinyali için yeterli canlı veri yok.')
+  }
+
+  const brentChange3d = percentChange(latestBrent.price, previousBrent3d)
+  const usdChange3d = percentChange(usdTry.current.rate, usdTry.previous3d.rate)
+  const indexChange3d = percentChange(currentIndex, index3d)
+  const indexChange7d = percentChange(currentIndex, index7d)
+  const direction = resolveSignalDirection(indexChange3d, indexChange7d)
+  const confidence = resolveSignalConfidence(indexChange3d, indexChange7d)
+  const score = Math.min(100, Math.round(Math.max(Math.abs(indexChange3d), Math.abs(indexChange7d)) * 12))
+  const tone = signalToneConfig[direction]
+  const calculatedAt = new Date()
+
+  return {
+    color: tone.color,
+    confidence,
+    confidenceLabel: confidenceLabels[confidence],
+    direction,
+    fuels: buildLiveFuelSignals(direction, confidence, score),
+    icon: tone.icon,
+    metrics: [
+      { label: 'Brent', value: formatUsd(latestBrent.price) },
+      { label: 'USD/TL', value: formatRate(usdTry.current.rate) },
+      { label: '7 gün', value: formatPercentValue(indexChange7d) },
+    ],
+    score,
+    softColor: tone.softColor,
+    summary: buildLiveMarketSummary(direction, confidence, indexChange3d, indexChange7d, brentChange3d, usdChange3d),
+    title: tone.title,
+    updatedAt: formatSignalTime(calculatedAt),
+  }
 }
 
 function getFallbackCity(name, index) {
@@ -629,7 +972,7 @@ async function fetchRemoteFuelData() {
     return null
   }
 
-  const [pricesResult, historyResult, marketSignalResult] = await Promise.all([
+  const [pricesResult, historyResult, marketSignalResult, liveMarketSignal] = await Promise.all([
     supabase.from('fiyatlar').select('il, benzin_95, motorin, lpg, guncelleme'),
     supabase
       .from('gecmis')
@@ -643,6 +986,7 @@ async function fetchRemoteFuelData() {
       )
       .order('calculated_at', { ascending: false })
       .limit(1),
+    fetchLiveMarketSignal().catch(() => null),
   ])
 
   if (pricesResult.error) {
@@ -658,9 +1002,9 @@ async function fetchRemoteFuelData() {
 
   return {
     history: remoteHistory.length >= 2 ? remoteHistory : fallbackHistory,
-    marketSignal: marketSignalResult.error
-      ? fallbackMarketSignal
-      : normalizeMarketSignalRecord(marketSignalResult.data?.[0]),
+    marketSignal:
+      liveMarketSignal ??
+      (marketSignalResult.error ? fallbackMarketSignal : normalizeMarketSignalRecord(marketSignalResult.data?.[0])),
     prices: mergePricesWithFallback(remotePrices),
     source: 'supabase',
   }
