@@ -1,13 +1,15 @@
 import json
 import os
 import re
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from supabase import create_client
+
+from market_signals import build_market_signal
 
 load_dotenv()
 
@@ -15,7 +17,16 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
 NOTIFICATION_MIN_CHANGE = float(os.getenv("NOTIFICATION_MIN_CHANGE", "0.01"))
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
-ISTANBUL_TZ = ZoneInfo("Europe/Istanbul")
+
+
+def resolve_istanbul_timezone():
+    try:
+        return ZoneInfo("Europe/Istanbul")
+    except ZoneInfoNotFoundError:
+        return timezone(timedelta(hours=3))
+
+
+ISTANBUL_TZ = resolve_istanbul_timezone()
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -281,6 +292,19 @@ def bildirim_log_kaydet(mesaj_sayisi, degisim_sayisi):
         pass
 
 
+def piyasa_sinyali_kaydet():
+    try:
+        sinyal = build_market_signal()
+        supabase.table("market_signals").upsert(sinyal, on_conflict="signal_date").execute()
+        print(
+            "Piyasa sinyali kaydedildi: "
+            f"{sinyal['direction']} / {sinyal['confidence']} / skor {sinyal['score']}"
+        )
+    except Exception as hata:
+        print("Piyasa sinyali kaydedilemedi. backend/supabase_market_signals.sql dosyasini Supabase'de calistirin.")
+        print(f"Detay: {hata}")
+
+
 def fiyat_bildirimleri_gonder(degisimler):
     if not degisimler:
         print("Fiyat degisimi yok, bildirim gonderilmedi")
@@ -347,4 +371,5 @@ if __name__ == "__main__":
 
     supabase_yaz(veri)
     gecmis_kaydet(veri)
+    piyasa_sinyali_kaydet()
     fiyat_bildirimleri_gonder(degisimler)

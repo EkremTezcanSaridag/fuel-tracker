@@ -7,6 +7,11 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 
 const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+const fuelSignalIcons = {
+  Benzin: 'gas-station',
+  Motorin: 'truck-outline',
+  LPG: 'fire',
+}
 
 const chartHeight = 118
 const chartDomain = { min: 20, max: 70 }
@@ -47,6 +52,7 @@ export default function AnaSayfa() {
   const { width } = useWindowDimensions()
   const { data, refresh, refreshing } = useFuelData()
   const fuels = data.homeFuels
+  const marketSignal = data.marketSignal
   const trendSeries = data.homeTrendSeries
   const chartWidth = Math.max(210, Math.min(width - 92, 330))
 
@@ -135,6 +141,59 @@ export default function AnaSayfa() {
             </View>
           </View>
         ))}
+
+        <View style={styles.signalCard}>
+          <View style={styles.signalHeader}>
+            <View style={styles.signalTitleGroup}>
+              <View style={[styles.signalIcon, { backgroundColor: marketSignal.softColor }]}>
+                <MaterialCommunityIcons name={marketSignal.icon} size={18} color={marketSignal.color} />
+              </View>
+              <View style={styles.signalTitleText}>
+                <Text style={styles.signalEyebrow}>Piyasa Sinyali</Text>
+                <Text style={styles.signalTitle}>{marketSignal.title}</Text>
+              </View>
+            </View>
+
+            <View style={[styles.signalPill, { borderColor: marketSignal.color }]}>
+              <Text style={[styles.signalPillText, { color: marketSignal.color }]}>
+                {marketSignal.confidenceLabel}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.signalSummary}>{marketSignal.summary}</Text>
+
+          <View style={styles.signalMetricRow}>
+            {marketSignal.metrics.map((metric) => (
+              <View key={metric.label} style={styles.signalMetric}>
+                <Text style={styles.signalMetricLabel}>{metric.label}</Text>
+                <Text style={styles.signalMetricValue}>{metric.value}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.fuelSignalList}>
+            {marketSignal.fuels.map((fuelSignal) => (
+              <View key={fuelSignal.fuel} style={styles.fuelSignalRow}>
+                <View style={styles.fuelSignalName}>
+                  <MaterialCommunityIcons
+                    name={fuelSignalIcons[fuelSignal.fuel] ?? 'fuel'}
+                    size={15}
+                    color={colors.mutedSoft}
+                  />
+                  <Text style={styles.fuelSignalFuel}>{fuelSignal.fuel}</Text>
+                </View>
+                <Text style={styles.fuelSignalValue} numberOfLines={1}>
+                  {fuelSignal.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.signalDisclaimer}>
+            Son hesaplama: {marketSignal.updatedAt} · Tahmini sinyaldir, kesin fiyat değişikliği değildir.
+          </Text>
+        </View>
 
         <View style={styles.chartCard}>
           <View style={styles.sectionHeader}>
@@ -366,6 +425,128 @@ const styles = StyleSheet.create({
   },
   flatText: {
     color: colors.mutedSoft,
+  },
+  signalCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+    marginBottom: 2,
+    padding: 14,
+    ...shadows.soft,
+  },
+  signalHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  signalTitleGroup: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    paddingRight: 10,
+  },
+  signalIcon: {
+    alignItems: 'center',
+    borderRadius: 8,
+    height: 36,
+    justifyContent: 'center',
+    marginRight: 10,
+    width: 36,
+  },
+  signalTitleText: {
+    flex: 1,
+  },
+  signalEyebrow: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '900',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
+  signalTitle: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  signalPill: {
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minWidth: 66,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  signalPillText: {
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  signalSummary: {
+    color: colors.mutedSoft,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  signalMetricRow: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    paddingVertical: 10,
+  },
+  signalMetric: {
+    flex: 1,
+  },
+  signalMetricLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  signalMetricValue: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  fuelSignalList: {
+    marginTop: 10,
+  },
+  fuelSignalRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 28,
+  },
+  fuelSignalName: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flex: 1,
+    paddingRight: 10,
+  },
+  fuelSignalFuel: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '900',
+    marginLeft: 7,
+  },
+  fuelSignalValue: {
+    color: colors.mutedSoft,
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: '800',
+    textAlign: 'right',
+  },
+  signalDisclaimer: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
+    marginTop: 8,
   },
   chartCard: {
     backgroundColor: colors.surface,

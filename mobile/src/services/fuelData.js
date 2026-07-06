@@ -110,6 +110,56 @@ const fallbackHistory = [
 ]
 
 const fallbackUpdatedAt = '2026-07-05 10:45'
+const signalToneConfig = {
+  increase: {
+    color: colors.danger,
+    icon: 'trending-up',
+    softColor: colors.dangerDark,
+    title: 'Artış baskısı',
+    tone: 'bad',
+  },
+  decrease: {
+    color: colors.accent,
+    icon: 'trending-down',
+    softColor: colors.accentDark,
+    title: 'İndirim baskısı',
+    tone: 'good',
+  },
+  neutral: {
+    color: colors.info,
+    icon: 'swap-horizontal',
+    softColor: '#26364F',
+    title: 'Nötr sinyal',
+    tone: 'flat',
+  },
+}
+const confidenceLabels = {
+  high: 'Yüksek',
+  medium: 'Orta',
+  low: 'Düşük',
+}
+const fallbackMarketSignal = {
+  color: signalToneConfig.neutral.color,
+  confidence: 'low',
+  confidenceLabel: confidenceLabels.low,
+  direction: 'neutral',
+  fuels: [
+    { confidenceLabel: confidenceLabels.low, direction: 'neutral', fuel: 'Benzin', label: 'Canlı veri bekleniyor' },
+    { confidenceLabel: confidenceLabels.low, direction: 'neutral', fuel: 'Motorin', label: 'Canlı veri bekleniyor' },
+    { confidenceLabel: confidenceLabels.low, direction: 'neutral', fuel: 'LPG', label: 'Canlı veri bekleniyor' },
+  ],
+  icon: signalToneConfig.neutral.icon,
+  metrics: [
+    { label: 'Brent', value: '--' },
+    { label: 'USD/TL', value: '--' },
+    { label: '7 gün', value: '--' },
+  ],
+  score: 0,
+  softColor: signalToneConfig.neutral.softColor,
+  summary: 'Brent petrol ve USD/TL verisiyle piyasa sinyali hesaplanacak.',
+  title: signalToneConfig.neutral.title,
+  updatedAt: '--',
+}
 const monthNames = [
   'Ocak',
   'Şubat',
@@ -189,6 +239,62 @@ function formatSyncTime(date = new Date()) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`
 }
 
+function formatSignalTime(dateValue) {
+  const date = new Date(dateValue)
+
+  if (Number.isNaN(date.getTime())) {
+    return '--'
+  }
+
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+function formatUsd(value) {
+  return Number.isFinite(value) ? `$${value.toFixed(2)}` : '--'
+}
+
+function formatRate(value) {
+  return Number.isFinite(value) ? value.toFixed(2) : '--'
+}
+
+function formatPercentValue(value) {
+  if (!Number.isFinite(value)) {
+    return '--'
+  }
+
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+}
+
+function parseJsonList(value) {
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+
+  return []
+}
+
+function normalizeSignalDirection(direction) {
+  return signalToneConfig[direction] ? direction : 'neutral'
+}
+
+function normalizeSignalConfidence(confidence) {
+  return confidenceLabels[confidence] ? confidence : 'low'
+}
+
+function buildFuelSignalLabel(direction) {
+  return signalToneConfig[normalizeSignalDirection(direction)].title
+}
+
 function getFallbackCity(name, index) {
   const known = highlightedCities[name]
 
@@ -248,6 +354,50 @@ function normalizeHistoryRecord(record) {
     benzinChange: parseFuelValue(record.benzin_degisim ?? record.benzinChange) ?? 0,
     motorinChange: parseFuelValue(record.motorin_degisim ?? record.motorinChange) ?? 0,
     lpgChange: parseFuelValue(record.lpg_degisim ?? record.lpgChange) ?? 0,
+  }
+}
+
+function normalizeMarketSignalRecord(record) {
+  if (!record) {
+    return fallbackMarketSignal
+  }
+
+  const direction = normalizeSignalDirection(record.direction)
+  const confidence = normalizeSignalConfidence(record.confidence)
+  const tone = signalToneConfig[direction]
+  const rawFuelSignals = parseJsonList(record.signals)
+  const fuels = rawFuelSignals.length
+    ? rawFuelSignals.map((signal) => {
+        const fuelDirection = normalizeSignalDirection(signal.direction)
+        const fuelConfidence = normalizeSignalConfidence(signal.confidence)
+
+        return {
+          confidenceLabel: confidenceLabels[fuelConfidence],
+          direction: fuelDirection,
+          fuel: signal.fuel ?? 'Yakıt',
+          label: buildFuelSignalLabel(fuelDirection),
+          score: Number(signal.score) || 0,
+        }
+      })
+    : fallbackMarketSignal.fuels
+
+  return {
+    color: tone.color,
+    confidence,
+    confidenceLabel: confidenceLabels[confidence],
+    direction,
+    fuels,
+    icon: tone.icon,
+    metrics: [
+      { label: 'Brent', value: formatUsd(parseFuelValue(record.brent_usd)) },
+      { label: 'USD/TL', value: formatRate(parseFuelValue(record.usd_try)) },
+      { label: '7 gün', value: formatPercentValue(parseFuelValue(record.index_change_7d)) },
+    ],
+    score: Number(record.score) || 0,
+    softColor: tone.softColor,
+    summary: record.summary ?? fallbackMarketSignal.summary,
+    title: tone.title,
+    updatedAt: formatSignalTime(record.calculated_at ?? record.signal_date),
   }
 }
 
@@ -443,7 +593,7 @@ function buildRecentChanges(history) {
   })
 }
 
-function buildFuelData({ prices, history, source, error, syncedAt = new Date() }) {
+function buildFuelData({ prices, history, source, error, marketSignal = fallbackMarketSignal, syncedAt = new Date() }) {
   const cityRows = buildCityRows(prices)
 
   return {
@@ -467,6 +617,7 @@ function buildFuelData({ prices, history, source, error, syncedAt = new Date() }
     homeFuels: buildHomeFuels(prices, history),
     homeTrendSeries: buildHomeTrendSeries(history),
     lastUpdatedLabel: formatSyncTime(syncedAt),
+    marketSignal,
     prices,
     recentChanges: buildRecentChanges(history),
     source,
@@ -478,13 +629,20 @@ async function fetchRemoteFuelData() {
     return null
   }
 
-  const [pricesResult, historyResult] = await Promise.all([
+  const [pricesResult, historyResult, marketSignalResult] = await Promise.all([
     supabase.from('fiyatlar').select('il, benzin_95, motorin, lpg, guncelleme'),
     supabase
       .from('gecmis')
       .select('tarih, benzin_95, motorin, lpg, benzin_degisim, motorin_degisim, lpg_degisim')
       .order('tarih', { ascending: true })
       .limit(30),
+    supabase
+      .from('market_signals')
+      .select(
+        'signal_date, direction, confidence, score, summary, brent_usd, usd_try, brent_try_index, brent_change_3d, usd_change_3d, index_change_3d, index_change_7d, signals, calculated_at',
+      )
+      .order('calculated_at', { ascending: false })
+      .limit(1),
   ])
 
   if (pricesResult.error) {
@@ -500,6 +658,9 @@ async function fetchRemoteFuelData() {
 
   return {
     history: remoteHistory.length >= 2 ? remoteHistory : fallbackHistory,
+    marketSignal: marketSignalResult.error
+      ? fallbackMarketSignal
+      : normalizeMarketSignalRecord(marketSignalResult.data?.[0]),
     prices: mergePricesWithFallback(remotePrices),
     source: 'supabase',
   }

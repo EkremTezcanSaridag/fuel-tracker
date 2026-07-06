@@ -16,6 +16,7 @@ PompaMetre, Türkiye'deki akaryakıt fiyatlarını takip etmek için geliştiril
 - Ana Sayfa ve İller ekranında manuel yenileme
 - Supabase bağlantısı ve güvenli yedek veri kullanımı
 - Fiyat geçmişi, trend grafiği ve son değişiklikler
+- Brent petrol ve USD/TL bazlı Piyasa Sinyali kartı
 - Bildirim ayarları ekranı
 - Özel uygulama ikonu, splash screen ve README marka görseli
 
@@ -56,11 +57,11 @@ EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql` dosyası Supabase SQL Editor'da bir kez çalıştırılmalıdır. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
+Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, Piyasa Sinyali için `backend/supabase_market_signals.sql` dosyası Supabase SQL Editor'da bir kez çalıştırılmalıdır. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
 
 ## Uygulama Ekranları
 
-- Ana Sayfa: güncel ortalama fiyatlar, son yenileme zamanı ve 7 günlük trend
+- Ana Sayfa: güncel ortalama fiyatlar, piyasa sinyali, son yenileme zamanı ve 7 günlük trend
 - İller: 81 il listesi, yakıt türü seçimi, il arama ve yenileme
 - Geçmiş: 30 günlük trend, özet metrikler ve son değişiklikler
 - Bildirimler: fiyat uyarıları, sessiz saatler ve takip edilen şehir/yakıt ayarları
@@ -73,8 +74,9 @@ Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql` do
 - Tamamlandı: İl arama, yakıt filtreleme ve manuel yenileme
 - Tamamlandı: Logo, app icon, splash screen ve README görseli
 - Tamamlandı: gerçek bildirim izinleri, token kaydı ve backend fiyat değişimi push akışı
-- Sıradaki: Supabase bildirim tablolarını ve GitHub Actions service role secret'ını üretimde aktif etmek
+- Tamamlandı: Brent petrol ve USD/TL bazlı Piyasa Sinyali fazı
+- Sıradaki: Supabase bildirim/sinyal tablolarını ve GitHub Actions service role secret'ını üretimde aktif etmek
 
 ## Veri Kaynağı
 
-Backend tarafı akaryakıt fiyatlarını web kaynağından çekip Supabase'e yazar. Mobil uygulama ise Supabase'den okur ve kullanıcıya koyu temalı, mobil odaklı bir arayüzle sunar.
+Backend tarafı akaryakıt fiyatlarını web kaynağından çekip Supabase'e yazar. Piyasa Sinyali fazında Brent petrol için DataHub/FRED, USD/TL için TCMB günlük kur verisi kullanılır. Mobil uygulama ise Supabase'den okur ve kullanıcıya koyu temalı, mobil odaklı bir arayüzle sunar.
