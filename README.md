@@ -56,6 +56,8 @@ EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
+Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql` dosyası Supabase SQL Editor'da bir kez çalıştırılmalıdır. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
+
 ## Uygulama Ekranları
 
 - Ana Sayfa: güncel ortalama fiyatlar, son yenileme zamanı ve 7 günlük trend
@@ -70,8 +72,8 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 - Tamamlandı: Supabase okuma bağlantısı
 - Tamamlandı: İl arama, yakıt filtreleme ve manuel yenileme
 - Tamamlandı: Logo, app icon, splash screen ve README görseli
-- Sıradaki: gerçek bildirim izinleri ve şehir/yakıt takip seçimlerini kalıcı hale getirme
-- Sıradaki: backend otomasyonunu netleştirip günlük veri güncellemesini üretim akışına bağlama
+- Tamamlandı: gerçek bildirim izinleri, token kaydı ve backend fiyat değişimi push akışı
+- Sıradaki: Supabase bildirim tablolarını ve GitHub Actions service role secret'ını üretimde aktif etmek
 
 ## Veri Kaynağı
 

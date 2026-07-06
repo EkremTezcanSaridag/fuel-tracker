@@ -25,6 +25,11 @@ create table if not exists public.notification_logs (
 alter table public.push_tokens enable row level security;
 alter table public.notification_logs enable row level security;
 
+grant insert, update on public.push_tokens to anon;
+grant all on public.push_tokens to service_role;
+grant all on public.notification_logs to service_role;
+grant usage, select on sequence public.notification_logs_id_seq to service_role;
+
 drop policy if exists "push_tokens_insert_anon" on public.push_tokens;
 drop policy if exists "push_tokens_update_anon" on public.push_tokens;
 
