@@ -145,8 +145,8 @@ export default function Gecmis() {
             </View>
 
             <View style={[styles.chartLabels, { width: chartWidth }]}>
-              {chartLabels.map((label) => (
-                <Text key={label} style={styles.chartLabel}>
+              {chartLabels.map((label, index) => (
+                <Text key={`${label}-${index}`} style={styles.chartLabel}>
                   {label}
                 </Text>
               ))}
@@ -174,7 +174,10 @@ export default function Gecmis() {
 
         <View style={styles.changesCard}>
           {recentChanges.map((change, index) => (
-            <View key={change.date} style={[styles.changeRow, index !== recentChanges.length - 1 && styles.changeDivider]}>
+            <View
+              key={`${change.date}-${change.tag}-${index}`}
+              style={[styles.changeRow, index !== recentChanges.length - 1 && styles.changeDivider]}
+            >
               <View style={styles.changeDotWrap}>
                 <MaterialCommunityIcons
                   name={change.tone === 'up' ? 'arrow-up-bold' : 'arrow-down-bold'}

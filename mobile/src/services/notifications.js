@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import Constants from 'expo-constants'
+import Constants, { ExecutionEnvironment } from 'expo-constants'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { supabase } from '../supabase'
@@ -77,7 +77,19 @@ function getProjectId() {
   return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
 }
 
+function isAndroidExpoGo() {
+  return Platform.OS === 'android' && Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+}
+
+function getExpoGoPushError() {
+  return 'Expo Go Android remote push desteklemiyor. Bildirim tokeni icin development build veya APK gerekir.'
+}
+
 async function getExpoPushToken() {
+  if (isAndroidExpoGo()) {
+    throw new Error(getExpoGoPushError())
+  }
+
   const projectId = getProjectId()
   const tokenResult = projectId
     ? await Notifications.getExpoPushTokenAsync({ projectId })
@@ -172,6 +184,10 @@ export async function getNotificationPermissionStatus(settings = defaultNotifica
     return normalizePermissionResponse(permission)
   }
 
+  if (isAndroidExpoGo()) {
+    return normalizePermissionResponse(permission, null, getExpoGoPushError())
+  }
+
   try {
     const expoPushToken = await getExpoPushToken()
     const registration = await syncPushRegistration(expoPushToken, settings, metadata)
@@ -193,6 +209,10 @@ export async function requestNotificationAccess(settings = defaultNotificationSe
 
   if (!nextPermission.granted && nextPermission.status !== 'granted') {
     return normalizePermissionResponse(nextPermission)
+  }
+
+  if (isAndroidExpoGo()) {
+    return normalizePermissionResponse(nextPermission, null, getExpoGoPushError())
   }
 
   try {
