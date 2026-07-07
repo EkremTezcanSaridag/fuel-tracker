@@ -150,6 +150,19 @@ def fiyat_degisimlerini_hesapla(onceki, yeni):
     return sorted(degisimler, key=lambda item: abs(item["diff"]), reverse=True)
 
 
+def degisim_ozeti(degisimler, limit=8):
+    return [
+        {
+            "city": degisim["city"],
+            "fuel": degisim["fuel"],
+            "diff": degisim["diff"],
+            "old_price": degisim["old_price"],
+            "new_price": degisim["new_price"],
+        }
+        for degisim in degisimler[:limit]
+    ]
+
+
 def supabase_yaz(veri):
     for kayit in veri.values():
         supabase.table("fiyatlar").upsert(kayit).execute()
@@ -279,17 +292,38 @@ def parcalara_bol(liste, boyut):
         yield liste[index : index + boyut]
 
 
-def bildirim_log_kaydet(mesaj_sayisi, degisim_sayisi):
+def bildirim_log_kaydet(
+    mesaj_sayisi,
+    degisim_sayisi,
+    status="sent",
+    reason=None,
+    token_count=0,
+    candidate_count=0,
+    skipped_quiet_count=0,
+    skipped_empty_token_count=0,
+    skipped_no_match_count=0,
+    error_message=None,
+    details=None,
+):
     try:
         supabase.table("notification_logs").insert(
             {
+                "status": status,
+                "reason": reason,
                 "sent_count": mesaj_sayisi,
                 "change_count": degisim_sayisi,
+                "token_count": token_count,
+                "candidate_count": candidate_count,
+                "skipped_quiet_count": skipped_quiet_count,
+                "skipped_empty_token_count": skipped_empty_token_count,
+                "skipped_no_match_count": skipped_no_match_count,
+                "error_message": error_message,
+                "details": details or {},
                 "created_at": datetime.now(ISTANBUL_TZ).isoformat(),
             }
         ).execute()
-    except Exception:
-        pass
+    except Exception as hata:
+        print(f"Bildirim audit log kaydi yazilamadi: {hata}")
 
 
 def piyasa_sinyali_kaydet():
@@ -308,50 +342,114 @@ def piyasa_sinyali_kaydet():
 def fiyat_bildirimleri_gonder(degisimler):
     if not degisimler:
         print("Fiyat degisimi yok, bildirim gonderilmedi")
+        bildirim_log_kaydet(0, 0, status="skipped", reason="no_changes")
         return
+
+    print(f"Bildirim icin {len(degisimler)} fiyat degisimi bulundu")
+    for degisim in degisimler[:8]:
+        print(
+            "  Degisim: "
+            f"{degisim['city']} {degisim['fuel']} "
+            f"{degisim['old_price']:.2f} -> {degisim['new_price']:.2f} "
+            f"({degisim['diff']:+.2f} TL)"
+        )
 
     tokenlar = push_tokenlarini_oku()
 
     if not tokenlar:
         print("Kayitli push token yok, bildirim gonderilmedi")
+        bildirim_log_kaydet(
+            0,
+            len(degisimler),
+            status="skipped",
+            reason="no_tokens",
+            details={"changes": degisim_ozeti(degisimler)},
+        )
         return
 
     mesajlar = []
+    skipped_quiet_count = 0
+    skipped_empty_token_count = 0
+    skipped_no_match_count = 0
 
     for token_kayit in tokenlar:
         if sessiz_saatte_mi(token_kayit):
+            skipped_quiet_count += 1
             continue
 
         if not token_kayit.get("expo_push_token"):
+            skipped_empty_token_count += 1
             continue
 
         degisim = token_icin_degisim_sec(token_kayit, degisimler)
 
         if not degisim:
+            skipped_no_match_count += 1
             continue
 
         mesajlar.append(bildirim_mesaji_olustur(token_kayit, degisim))
 
     if not mesajlar:
         print("Bildirim kosullarina uyan cihaz yok")
+        bildirim_log_kaydet(
+            0,
+            len(degisimler),
+            status="skipped",
+            reason="no_matching_devices",
+            token_count=len(tokenlar),
+            skipped_quiet_count=skipped_quiet_count,
+            skipped_empty_token_count=skipped_empty_token_count,
+            skipped_no_match_count=skipped_no_match_count,
+            details={"changes": degisim_ozeti(degisimler)},
+        )
         return
 
     gonderilen = 0
+    expo_responses = []
 
-    for parca in parcalara_bol(mesajlar, 100):
-        response = requests.post(
-            EXPO_PUSH_URL,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-            },
-            json=parca,
-            timeout=30,
+    try:
+        for parca in parcalara_bol(mesajlar, 100):
+            response = requests.post(
+                EXPO_PUSH_URL,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+                json=parca,
+                timeout=30,
+            )
+            response.raise_for_status()
+            expo_response = response.json()
+            expo_responses.append(expo_response)
+            gonderilen += len(parca)
+    except Exception as hata:
+        print(f"Expo Push API bildirimi gonderemedi: {hata}")
+        bildirim_log_kaydet(
+            gonderilen,
+            len(degisimler),
+            status="error",
+            reason="expo_api_error",
+            token_count=len(tokenlar),
+            candidate_count=len(mesajlar),
+            skipped_quiet_count=skipped_quiet_count,
+            skipped_empty_token_count=skipped_empty_token_count,
+            skipped_no_match_count=skipped_no_match_count,
+            error_message=str(hata),
+            details={"changes": degisim_ozeti(degisimler), "expo_responses": expo_responses},
         )
-        response.raise_for_status()
-        gonderilen += len(parca)
+        return
 
-    bildirim_log_kaydet(gonderilen, len(degisimler))
+    bildirim_log_kaydet(
+        gonderilen,
+        len(degisimler),
+        status="sent",
+        token_count=len(tokenlar),
+        candidate_count=len(mesajlar),
+        skipped_quiet_count=skipped_quiet_count,
+        skipped_empty_token_count=skipped_empty_token_count,
+        skipped_no_match_count=skipped_no_match_count,
+        details={"changes": degisim_ozeti(degisimler), "expo_responses": expo_responses},
+    )
     print(f"{gonderilen} push bildirimi Expo Push API'ye gonderildi")
 
 

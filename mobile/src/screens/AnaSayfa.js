@@ -90,7 +90,7 @@ export default function AnaSayfa() {
           <View style={styles.headerMark}>
             <MaterialCommunityIcons name="fuel" size={18} color={colors.accent} />
           </View>
-          <Text style={styles.brand}>PompaMetre</Text>
+          <Text style={styles.brand}>Yakıt Radar</Text>
           <View style={styles.headerActions}>
             <Pressable
               accessibilityLabel="Fiyatları yenile"

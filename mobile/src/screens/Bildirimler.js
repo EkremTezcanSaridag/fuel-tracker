@@ -133,7 +133,7 @@ export default function Bildirimler() {
     setPermissionBusy(false)
 
     if (!nextPermission.granted) {
-      Alert.alert('Bildirim izni kapalı', 'Telefon ayarlarından PompaMetre bildirimlerine izin vermen gerekiyor.')
+      Alert.alert('Bildirim izni kapalı', 'Telefon ayarlarından Yakıt Radar bildirimlerine izin vermen gerekiyor.')
       return false
     }
 
@@ -192,7 +192,7 @@ export default function Bildirimler() {
           <View style={styles.headerMark}>
             <MaterialCommunityIcons name="bell-outline" size={18} color={colors.accent} />
           </View>
-          <Text style={styles.brand}>PompaMetre</Text>
+          <Text style={styles.brand}>Yakıt Radar</Text>
           <MaterialCommunityIcons name="account-circle-outline" size={21} color={colors.accent} />
         </View>
 
@@ -324,7 +324,8 @@ export default function Bildirimler() {
         <View style={styles.infoCard}>
           <MaterialCommunityIcons name="information-outline" size={18} color={colors.accent} />
           <Text style={styles.infoText}>
-            {permission.tokenError ?? 'Bu fazda cihaz bildirimi hazır; otomatik fiyat alarmı backend fazında bağlanacak.'}
+            {permission.tokenError ??
+              'Bildirim izni aktifse cihaz tokeni otomatik kaydedilir. Fiyat değişimlerinde backend bu cihaza uyarı gönderebilir.'}
           </Text>
         </View>
       </ScrollView>

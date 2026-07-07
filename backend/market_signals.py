@@ -89,7 +89,7 @@ def multiply_values(first, second):
 def fetch_csv_text(url):
     response = requests.get(
         url,
-        headers={"User-Agent": "PompaMetre/1.0"},
+        headers={"User-Agent": "YakitRadar/1.0"},
         timeout=30,
     )
     response.raise_for_status()
@@ -148,7 +148,7 @@ def tcmb_url_for_date(day):
 def fetch_usd_try_for_date(day):
     response = requests.get(
         tcmb_url_for_date(day),
-        headers={"User-Agent": "PompaMetre/1.0"},
+        headers={"User-Agent": "YakitRadar/1.0"},
         timeout=20,
     )
     response.raise_for_status()

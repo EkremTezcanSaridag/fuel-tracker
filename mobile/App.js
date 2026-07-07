@@ -8,7 +8,13 @@ import AnaSayfa from './src/screens/AnaSayfa'
 import Iller from './src/screens/Iller'
 import Gecmis from './src/screens/Gecmis'
 import Bildirimler from './src/screens/Bildirimler'
-import { configureNotificationHandler, subscribeToNotificationEvents } from './src/services/notifications'
+import {
+  defaultNotificationSettings,
+  configureNotificationHandler,
+  loadNotificationSettings,
+  subscribeToNotificationEvents,
+  syncExistingNotificationPermission,
+} from './src/services/notifications'
 import { colors } from './src/theme'
 
 enableScreens()
@@ -30,8 +36,21 @@ const tabIcons = {
   [tabs.alerts]: 'bell-outline',
 }
 
+const startupNotificationMeta = {
+  trackedCities: ['İstanbul', 'Ankara', 'İzmir'],
+  trackedFuels: defaultNotificationSettings.trackedFuels,
+}
+
 export default function App() {
-  useEffect(() => subscribeToNotificationEvents(), [])
+  useEffect(() => {
+    const unsubscribe = subscribeToNotificationEvents()
+
+    loadNotificationSettings()
+      .then((settings) => syncExistingNotificationPermission(settings, startupNotificationMeta))
+      .catch(() => {})
+
+    return unsubscribe
+  }, [])
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>

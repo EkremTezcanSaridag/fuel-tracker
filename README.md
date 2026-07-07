@@ -1,12 +1,12 @@
-# PompaMetre
+# Yakıt Radar
 
-![PompaMetre marka görseli](docs/pompametre-brand.png)
+![Yakıt Radar marka görseli](docs/pompametre-brand.png)
 
-PompaMetre, Türkiye'deki akaryakıt fiyatlarını takip etmek için geliştirilen Expo + React Native mobil uygulamasıdır. Uygulama 81 il için Benzin, Mazot ve LPG fiyatlarını gösterir; şehir arama, yakıt türü filtreleme, yenileme ve fiyat geçmişi ekranlarını içerir.
+Yakıt Radar, Türkiye'deki akaryakıt fiyatlarını takip etmek için geliştirilen Expo + React Native mobil uygulamasıdır. Uygulama 81 il için Benzin, Mazot ve LPG fiyatlarını gösterir; şehir arama, yakıt türü filtreleme, yenileme ve fiyat geçmişi ekranlarını içerir.
 
 ## İndir
 
-[PompaMetre APK](https://expo.dev/artifacts/eas/aNCNLkGb-n-ZDincF11sqM16xxdWXHsCkF9QooDEryI.apk)
+[Yakıt Radar APK](https://expo.dev/artifacts/eas/aNCNLkGb-n-ZDincF11sqM16xxdWXHsCkF9QooDEryI.apk)
 
 ## Özellikler
 
@@ -57,7 +57,7 @@ EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, Piyasa Sinyali için `backend/supabase_market_signals.sql` dosyası Supabase SQL Editor'da bir kez çalıştırılmalıdır. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
+Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, Piyasa Sinyali için `backend/supabase_market_signals.sql` dosyası Supabase SQL Editor'da çalıştırılmalıdır. Bildirim audit alanları güncellendiği için mevcut kurulumlarda `backend/supabase_notifications.sql` tekrar çalıştırılabilir. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
 
 ## Uygulama Ekranları
 
@@ -75,7 +75,7 @@ Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, P
 - Tamamlandı: Logo, app icon, splash screen ve README görseli
 - Tamamlandı: gerçek bildirim izinleri, token kaydı ve backend fiyat değişimi push akışı
 - Tamamlandı: Brent petrol ve USD/TL bazlı Piyasa Sinyali fazı
-- Sıradaki: Supabase bildirim/sinyal tablolarını ve GitHub Actions service role secret'ını üretimde aktif etmek
+- Sıradaki: haber destekli zam/indirim beklentisi ve bildirim sonuçlarını yönetim ekranında görünür kılmak
 
 ## Veri Kaynağı
 

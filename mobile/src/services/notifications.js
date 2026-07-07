@@ -48,7 +48,7 @@ export async function setupNotificationChannels() {
     description: 'Akaryakit fiyat degisimleri ve ozetleri',
     importance: Notifications.AndroidImportance.HIGH,
     lightColor: '#19E6B1',
-    name: 'PompaMetre fiyat uyarilari',
+    name: 'Yakıt Radar fiyat uyarilari',
     vibrationPattern: [0, 250, 250, 250],
   })
 }
@@ -198,6 +198,30 @@ export async function getNotificationPermissionStatus(settings = defaultNotifica
   }
 }
 
+export async function syncExistingNotificationPermission(settings = defaultNotificationSettings, metadata = {}) {
+  try {
+    const permission = await getNotificationPermissionStatus(settings, metadata)
+
+    return {
+      permission,
+      synced: Boolean(permission.expoPushToken && !permission.tokenError),
+    }
+  } catch (error) {
+    return {
+      permission: normalizePermissionResponse(
+        {
+          canAskAgain: true,
+          granted: false,
+          status: 'undetermined',
+        },
+        null,
+        error?.message ?? 'Bildirim durumu kontrol edilemedi.',
+      ),
+      synced: false,
+    }
+  }
+}
+
 export async function requestNotificationAccess(settings = defaultNotificationSettings, metadata = {}) {
   await setupNotificationChannels()
 
@@ -235,7 +259,7 @@ export async function sendTestNotification() {
         screen: 'alerts',
       },
       sound: 'default',
-      title: 'PompaMetre test bildirimi',
+      title: 'Yakıt Radar test bildirimi',
     },
     trigger: {
       channelId: NOTIFICATION_CHANNEL_ID,

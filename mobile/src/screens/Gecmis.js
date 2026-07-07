@@ -72,7 +72,7 @@ export default function Gecmis() {
           <View style={styles.headerMark}>
             <MaterialCommunityIcons name="chart-line" size={18} color={colors.accent} />
           </View>
-          <Text style={styles.brand}>PompaMetre</Text>
+          <Text style={styles.brand}>Yakıt Radar</Text>
           <MaterialCommunityIcons name="account-circle-outline" size={21} color={colors.accent} />
         </View>
 
