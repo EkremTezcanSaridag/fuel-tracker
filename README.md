@@ -16,7 +16,8 @@ Yakıt Radar, Türkiye'deki akaryakıt fiyatlarını takip etmek için geliştir
 - Ana Sayfa ve İller ekranında manuel yenileme
 - Supabase bağlantısı ve güvenli yedek veri kullanımı
 - Fiyat geçmişi, trend grafiği ve son değişiklikler
-- Brent petrol ve USD/TL bazlı Piyasa Sinyali kartı
+- Brent petrol, USD/TL ve haber başlıklarıyla desteklenen Piyasa Sinyali kartı
+- Opsiyonel OpenAI destekli kısa zam/indirim beklentisi analizi
 - Bildirim ayarları ekranı
 - Özel uygulama ikonu, splash screen ve README marka görseli
 
@@ -57,11 +58,13 @@ EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, Piyasa Sinyali için `backend/supabase_market_signals.sql` dosyası Supabase SQL Editor'da çalıştırılmalıdır. Bildirim audit alanları güncellendiği için mevcut kurulumlarda `backend/supabase_notifications.sql` tekrar çalıştırılabilir. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
+Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, Piyasa Sinyali için `backend/supabase_market_signals.sql` dosyası Supabase SQL Editor'da çalıştırılmalıdır. Bildirim audit alanları güncellendiği için mevcut kurulumlarda `backend/supabase_notifications.sql` tekrar çalıştırılabilir. Haber destekli analiz alanları için mevcut kurulumlarda `backend/supabase_market_signals.sql` tekrar çalıştırılabilir. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
+
+Opsiyonel AI analizi için GitHub Actions secrets tarafına `OPENAI_API_KEY` eklenebilir. `OPENAI_MODEL` verilmezse backend varsayılan modeli kullanır; anahtar yoksa sistem kural tabanlı analizle çalışmaya devam eder.
 
 ## Uygulama Ekranları
 
-- Ana Sayfa: güncel ortalama fiyatlar, piyasa sinyali, son yenileme zamanı ve 7 günlük trend
+- Ana Sayfa: güncel ortalama fiyatlar, haber destekli piyasa sinyali, son yenileme zamanı ve 7 günlük trend
 - İller: 81 il listesi, yakıt türü seçimi, il arama ve yenileme
 - Geçmiş: 30 günlük trend, özet metrikler ve son değişiklikler
 - Bildirimler: fiyat uyarıları, sessiz saatler ve takip edilen şehir/yakıt ayarları
@@ -75,8 +78,9 @@ Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, P
 - Tamamlandı: Logo, app icon, splash screen ve README görseli
 - Tamamlandı: gerçek bildirim izinleri, token kaydı ve backend fiyat değişimi push akışı
 - Tamamlandı: Brent petrol ve USD/TL bazlı Piyasa Sinyali fazı
-- Sıradaki: haber destekli zam/indirim beklentisi ve bildirim sonuçlarını yönetim ekranında görünür kılmak
+- Tamamlandı: haber destekli zam/indirim beklentisi analiz fazı
+- Sıradaki: bildirim sonuçlarını yönetim/debug ekranında görünür kılmak
 
 ## Veri Kaynağı
 
-Backend tarafı akaryakıt fiyatlarını web kaynağından çekip Supabase'e yazar. Piyasa Sinyali fazında Brent petrol için DataHub/FRED, USD/TL için TCMB günlük kur verisi kullanılır. Mobil uygulama ise Supabase'den okur ve kullanıcıya koyu temalı, mobil odaklı bir arayüzle sunar.
+Backend tarafı akaryakıt fiyatlarını web kaynağından çekip Supabase'e yazar. Piyasa Sinyali fazında Brent petrol için DataHub/FRED, USD/TL için TCMB günlük kur verisi ve güncel haber başlıkları kullanılır. OpenAI anahtarı varsa bu veriler kısa bir beklenti analizine dönüştürülür; anahtar yoksa kural tabanlı analiz üretilir. Mobil uygulama ise Supabase'den okur ve kullanıcıya koyu temalı, mobil odaklı bir arayüzle sunar.

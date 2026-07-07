@@ -19,11 +19,13 @@ jobs:
           python-version: '3.11'
 
       - name: Paketleri kur
-        run: pip install requests beautifulsoup4 supabase python-dotenv
+        run: pip install -r backend/requirements.txt
 
       - name: Fiyatları güncelle
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
         run: python backend/fiyat_servisi.py

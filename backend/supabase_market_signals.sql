@@ -13,10 +13,15 @@ create table if not exists public.market_signals (
   index_change_3d numeric(8, 2),
   index_change_7d numeric(8, 2),
   signals jsonb not null default '[]'::jsonb,
+  analysis jsonb not null default '{}'::jsonb,
+  news_items jsonb not null default '[]'::jsonb,
   sources jsonb not null default '{}'::jsonb,
   calculated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+alter table public.market_signals add column if not exists analysis jsonb not null default '{}'::jsonb;
+alter table public.market_signals add column if not exists news_items jsonb not null default '[]'::jsonb;
 
 alter table public.market_signals enable row level security;
 

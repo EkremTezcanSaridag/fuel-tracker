@@ -12,6 +12,11 @@ const fuelSignalIcons = {
   Motorin: 'truck-outline',
   LPG: 'fire',
 }
+const signalToneIcons = {
+  decrease: 'arrow-down-bold',
+  increase: 'arrow-up-bold',
+  neutral: 'minus',
+}
 
 const chartHeight = 118
 const chartDomain = { min: 20, max: 70 }
@@ -171,6 +176,50 @@ export default function AnaSayfa() {
               </View>
             ))}
           </View>
+
+          {marketSignal.analysisFactors.length > 0 ? (
+            <View style={styles.analysisList}>
+              {marketSignal.analysisFactors.map((factor) => (
+                <View key={factor.label} style={styles.analysisRow}>
+                  <View
+                    style={[
+                      styles.analysisIcon,
+                      { backgroundColor: factor.tone === 'increase' ? colors.dangerDark : factor.tone === 'decrease' ? colors.accentDark : '#26364F' },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name={signalToneIcons[factor.tone] ?? signalToneIcons.neutral}
+                      size={12}
+                      color={factor.tone === 'increase' ? colors.danger : factor.tone === 'decrease' ? colors.accent : colors.mutedSoft}
+                    />
+                  </View>
+                  <View style={styles.analysisTextGroup}>
+                    <View style={styles.analysisTopLine}>
+                      <Text style={styles.analysisLabel}>{factor.label}</Text>
+                      <Text style={styles.analysisValue}>{factor.value}</Text>
+                    </View>
+                    <Text style={styles.analysisDetail} numberOfLines={2}>
+                      {factor.detail}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {marketSignal.newsItems.length > 0 ? (
+            <View style={styles.newsList}>
+              <Text style={styles.newsTitle}>Haber Etkisi</Text>
+              {marketSignal.newsItems.map((item) => (
+                <View key={`${item.source}-${item.title}`} style={styles.newsRow}>
+                  <MaterialCommunityIcons name="newspaper-variant-outline" size={13} color={colors.mutedSoft} />
+                  <Text style={styles.newsText} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
 
           <View style={styles.fuelSignalList}>
             {marketSignal.fuels.map((fuelSignal) => (
@@ -512,6 +561,77 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     fontWeight: '900',
+  },
+  analysisList: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    paddingVertical: 8,
+  },
+  analysisRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    minHeight: 42,
+    paddingVertical: 5,
+  },
+  analysisIcon: {
+    alignItems: 'center',
+    borderRadius: 7,
+    height: 24,
+    justifyContent: 'center',
+    marginRight: 9,
+    marginTop: 1,
+    width: 24,
+  },
+  analysisTextGroup: {
+    flex: 1,
+  },
+  analysisTopLine: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  analysisLabel: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '900',
+    paddingRight: 8,
+  },
+  analysisValue: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  analysisDetail: {
+    color: colors.mutedSoft,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
+  newsList: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    paddingVertical: 9,
+  },
+  newsTitle: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  newsRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  newsText: {
+    color: colors.mutedSoft,
+    flex: 1,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
+    marginLeft: 7,
   },
   fuelSignalList: {
     marginTop: 10,

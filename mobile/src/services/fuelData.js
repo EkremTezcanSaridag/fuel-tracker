@@ -154,6 +154,15 @@ const fallbackMarketSignal = {
     { label: 'USD/TL', value: '--' },
     { label: '7 gün', value: '--' },
   ],
+  analysisFactors: [
+    {
+      detail: 'Canlı veri geldiğinde analiz faktörleri burada görünecek.',
+      label: 'Analiz',
+      tone: 'neutral',
+      value: '--',
+    },
+  ],
+  newsItems: [],
   score: 0,
   softColor: signalToneConfig.neutral.softColor,
   summary: 'Brent petrol ve USD/TL verisiyle piyasa sinyali hesaplanacak.',
@@ -406,6 +415,24 @@ function parseJsonList(value) {
   return []
 }
 
+function parseJsonObject(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+    } catch {
+      return {}
+    }
+  }
+
+  return {}
+}
+
 function normalizeSignalDirection(direction) {
   return signalToneConfig[direction] ? direction : 'neutral'
 }
@@ -619,6 +646,7 @@ async function fetchLiveMarketSignal() {
   const calculatedAt = new Date()
 
   return {
+    analysisFactors: [],
     color: tone.color,
     confidence,
     confidenceLabel: confidenceLabels[confidence],
@@ -630,6 +658,7 @@ async function fetchLiveMarketSignal() {
       { label: 'USD/TL', value: formatRate(usdTry.current.rate) },
       { label: '7 gün', value: formatPercentValue(indexChange7d) },
     ],
+    newsItems: [],
     score,
     softColor: tone.softColor,
     summary: buildLiveMarketSummary(direction, confidence, indexChange3d, indexChange7d, brentChange3d, usdChange3d),
@@ -709,6 +738,9 @@ function normalizeMarketSignalRecord(record) {
   const confidence = normalizeSignalConfidence(record.confidence)
   const tone = signalToneConfig[direction]
   const rawFuelSignals = parseJsonList(record.signals)
+  const analysis = parseJsonObject(record.analysis)
+  const rawFactors = parseJsonList(analysis.factors)
+  const rawNewsItems = parseJsonList(record.news_items)
   const fuels = rawFuelSignals.length
     ? rawFuelSignals.map((signal) => {
         const fuelDirection = normalizeSignalDirection(signal.direction)
@@ -723,8 +755,26 @@ function normalizeMarketSignalRecord(record) {
         }
       })
     : fallbackMarketSignal.fuels
+  const analysisFactors = rawFactors.length
+    ? rawFactors.slice(0, 6).map((factor) => ({
+        detail: factor.detail ?? '',
+        label: factor.label ?? 'Faktör',
+        tone: normalizeSignalDirection(factor.tone),
+        value: factor.value ?? '--',
+      }))
+    : fallbackMarketSignal.analysisFactors
+  const newsItems = rawNewsItems.length
+    ? rawNewsItems
+        .slice(0, 3)
+        .map((item) => ({
+          source: item.source ?? 'Haber',
+          title: item.title ?? '',
+        }))
+        .filter((item) => item.title)
+    : []
 
   return {
+    analysisFactors,
     color: tone.color,
     confidence,
     confidenceLabel: confidenceLabels[confidence],
@@ -736,6 +786,7 @@ function normalizeMarketSignalRecord(record) {
       { label: 'USD/TL', value: formatRate(parseFuelValue(record.usd_try)) },
       { label: '7 gün', value: formatPercentValue(parseFuelValue(record.index_change_7d)) },
     ],
+    newsItems,
     score: Number(record.score) || 0,
     softColor: tone.softColor,
     summary: record.summary ?? fallbackMarketSignal.summary,
@@ -982,7 +1033,7 @@ async function fetchRemoteFuelData() {
     supabase
       .from('market_signals')
       .select(
-        'signal_date, direction, confidence, score, summary, brent_usd, usd_try, brent_try_index, brent_change_3d, usd_change_3d, index_change_3d, index_change_7d, signals, calculated_at',
+        'signal_date, direction, confidence, score, summary, brent_usd, usd_try, brent_try_index, brent_change_3d, usd_change_3d, index_change_3d, index_change_7d, signals, analysis, news_items, calculated_at',
       )
       .order('calculated_at', { ascending: false })
       .limit(1),
@@ -1003,8 +1054,9 @@ async function fetchRemoteFuelData() {
   return {
     history: remoteHistory.length >= 2 ? remoteHistory : fallbackHistory,
     marketSignal:
-      liveMarketSignal ??
-      (marketSignalResult.error ? fallbackMarketSignal : normalizeMarketSignalRecord(marketSignalResult.data?.[0])),
+      marketSignalResult.error || !marketSignalResult.data?.[0]
+        ? liveMarketSignal ?? fallbackMarketSignal
+        : normalizeMarketSignalRecord(marketSignalResult.data[0]),
     prices: mergePricesWithFallback(remotePrices),
     source: 'supabase',
   }

@@ -326,9 +326,9 @@ def bildirim_log_kaydet(
         print(f"Bildirim audit log kaydi yazilamadi: {hata}")
 
 
-def piyasa_sinyali_kaydet():
+def piyasa_sinyali_kaydet(degisimler=None):
     try:
-        sinyal = build_market_signal()
+        sinyal = build_market_signal(degisimler or [])
         supabase.table("market_signals").upsert(sinyal, on_conflict="signal_date").execute()
         print(
             "Piyasa sinyali kaydedildi: "
@@ -469,5 +469,5 @@ if __name__ == "__main__":
 
     supabase_yaz(veri)
     gecmis_kaydet(veri)
-    piyasa_sinyali_kaydet()
+    piyasa_sinyali_kaydet(degisimler)
     fiyat_bildirimleri_gonder(degisimler)
