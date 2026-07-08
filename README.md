@@ -17,7 +17,7 @@ Yakıt Radar, Türkiye'deki akaryakıt fiyatlarını takip etmek için geliştir
 - Supabase bağlantısı ve güvenli yedek veri kullanımı
 - Fiyat geçmişi, trend grafiği ve son değişiklikler
 - Brent petrol, USD/TL ve haber başlıklarıyla desteklenen Piyasa Sinyali kartı
-- Opsiyonel OpenAI destekli kısa zam/indirim beklentisi analizi
+- Opsiyonel Gemini destekli kısa zam/indirim beklentisi analizi
 - Bildirim ayarları ekranı
 - Özel uygulama ikonu, splash screen ve README marka görseli
 
@@ -60,7 +60,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, Piyasa Sinyali için `backend/supabase_market_signals.sql` dosyası Supabase SQL Editor'da çalıştırılmalıdır. Bildirim audit alanları güncellendiği için mevcut kurulumlarda `backend/supabase_notifications.sql` tekrar çalıştırılabilir. Haber destekli analiz alanları için mevcut kurulumlarda `backend/supabase_market_signals.sql` tekrar çalıştırılabilir. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
 
-Opsiyonel AI analizi için GitHub Actions secrets tarafına `OPENAI_API_KEY` eklenebilir. `OPENAI_MODEL` verilmezse backend varsayılan modeli kullanır; anahtar yoksa sistem kural tabanlı analizle çalışmaya devam eder.
+Opsiyonel ücretsiz AI analizi için GitHub Actions secrets tarafına `GEMINI_API_KEY` eklenebilir. `GEMINI_MODEL` verilmezse backend `gemini-2.5-flash` modelini kullanır; anahtar yoksa sistem kural tabanlı analizle çalışmaya devam eder.
 
 ## Uygulama Ekranları
 
@@ -83,4 +83,4 @@ Opsiyonel AI analizi için GitHub Actions secrets tarafına `OPENAI_API_KEY` ekl
 
 ## Veri Kaynağı
 
-Backend tarafı akaryakıt fiyatlarını web kaynağından çekip Supabase'e yazar. Piyasa Sinyali fazında Brent petrol için DataHub/FRED, USD/TL için TCMB günlük kur verisi ve güncel haber başlıkları kullanılır. OpenAI anahtarı varsa bu veriler kısa bir beklenti analizine dönüştürülür; anahtar yoksa kural tabanlı analiz üretilir. Mobil uygulama ise Supabase'den okur ve kullanıcıya koyu temalı, mobil odaklı bir arayüzle sunar.
+Backend tarafı akaryakıt fiyatlarını web kaynağından çekip Supabase'e yazar. Piyasa Sinyali fazında Brent petrol için DataHub/FRED, USD/TL için TCMB günlük kur verisi ve güncel haber başlıkları kullanılır. Gemini anahtarı varsa bu veriler kısa bir beklenti analizine dönüştürülür; anahtar yoksa kural tabanlı analiz üretilir. Mobil uygulama ise Supabase'den okur ve kullanıcıya koyu temalı, mobil odaklı bir arayüzle sunar.

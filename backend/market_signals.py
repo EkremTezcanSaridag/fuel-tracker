@@ -646,16 +646,28 @@ def build_rule_based_ai_summary(direction, confidence, market_summary, news_anal
     )
 
 
-def call_openai_analysis(payload):
-    api_key = os.getenv("OPENAI_API_KEY")
+def extract_gemini_text(response_data):
+    for candidate in response_data.get("candidates", []):
+        content = candidate.get("content") or {}
+
+        for part in content.get("parts", []):
+            text = part.get("text")
+
+            if text:
+                return text
+
+    return None
+
+
+def call_gemini_analysis(payload):
+    api_key = os.getenv("GEMINI_API_KEY")
 
     if not api_key:
         return None
 
-    model = os.getenv("OPENAI_MODEL", "gpt-5.5")
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     schema = {
         "type": "object",
-        "additionalProperties": False,
         "properties": {
             "summary": {"type": "string"},
             "watch_level": {"type": "string", "enum": ["low", "medium", "high"]},
@@ -666,51 +678,36 @@ def call_openai_analysis(payload):
 
     try:
         response = requests.post(
-            "https://api.openai.com/v1/responses",
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
             headers={
-                "Authorization": f"Bearer {api_key}",
+                "x-goog-api-key": api_key,
                 "Content-Type": "application/json",
             },
             json={
-                "model": model,
-                "input": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Turkiye akaryakit piyasasi icin kisa, temkinli ve kanita dayali analiz yaz. "
-                            "Kesin zam/indirim vaadi verme; bunu bir beklenti sinyali olarak anlat."
-                        ),
-                    },
+                "contents": [
                     {
                         "role": "user",
-                        "content": json.dumps(payload, ensure_ascii=False),
+                        "parts": [
+                            {
+                                "text": (
+                                    "Turkiye akaryakit piyasasi icin kisa, temkinli ve kanita dayali analiz yaz. "
+                                    "Kesin zam/indirim vaadi verme; bunu bir beklenti sinyali olarak anlat. "
+                                    "Sadece JSON uret. Veri:\n"
+                                    f"{json.dumps(payload, ensure_ascii=False)}"
+                                )
+                            }
+                        ],
                     },
                 ],
-                "text": {
-                    "format": {
-                        "type": "json_schema",
-                        "name": "fuel_market_analysis",
-                        "schema": schema,
-                        "strict": True,
-                    }
+                "generationConfig": {
+                    "responseMimeType": "application/json",
+                    "responseSchema": schema,
                 },
-                "store": False,
             },
             timeout=45,
         )
         response.raise_for_status()
-        data = response.json()
-        output_text = data.get("output_text")
-
-        if not output_text:
-            for item in data.get("output", []):
-                for content in item.get("content", []):
-                    if content.get("type") in ("output_text", "text") and content.get("text"):
-                        output_text = content["text"]
-                        break
-
-                if output_text:
-                    break
+        output_text = extract_gemini_text(response.json())
 
         if not output_text:
             return None
@@ -724,7 +721,7 @@ def call_openai_analysis(payload):
             "key_reason": parsed["key_reason"],
         }
     except Exception as error:
-        print(f"OpenAI analizi kullanilamadi, kural tabanli analize donuldu: {error}")
+        print(f"Gemini analizi kullanilamadi, kural tabanli analize donuldu: {error}")
         return None
 
 
@@ -795,7 +792,7 @@ def build_market_signal(price_changes=None):
         "news_analysis": news_analysis,
         "price_analysis": price_analysis,
     }
-    ai_result = call_openai_analysis(ai_payload)
+    ai_result = call_gemini_analysis(ai_payload)
     ai_summary = (
         ai_result["summary"]
         if ai_result
@@ -817,7 +814,7 @@ def build_market_signal(price_changes=None):
         "index_change_7d": index_change_7d,
         "signals": build_fuel_signals(direction, confidence, score),
         "analysis": {
-            "mode": "openai" if ai_result else "rules",
+            "mode": "gemini" if ai_result else "rules",
             "market_direction": market_direction,
             "market_confidence": market_confidence,
             "market_score": market_score,
