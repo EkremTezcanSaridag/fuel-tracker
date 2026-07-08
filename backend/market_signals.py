@@ -49,6 +49,25 @@ NEWS_FEEDS = [
         "url": "https://news.google.com/rss/search?q=brent%20petrol%20dolar%20akaryak%C4%B1t%20T%C3%BCrkiye&hl=tr&gl=TR&ceid=TR:tr",
     },
 ]
+NEWS_MAX_AGE_DAYS = int(os.getenv("NEWS_MAX_AGE_DAYS", "5"))
+NEWS_BLOCKED_SOURCES = {
+    "instagram.com",
+    "facebook.com",
+    "x.com",
+    "twitter.com",
+    "youtube.com",
+}
+NEWS_STRONG_ACTION_KEYWORDS = [
+    "bu gece",
+    "yarindan itibaren",
+    "yarından itibaren",
+    "litre fiyatina",
+    "litre fiyatına",
+    "pompa fiyatina",
+    "pompa fiyatına",
+    "tabelalara yansidi",
+    "tabelalara yansıdı",
+]
 
 NEWS_INCREASE_KEYWORDS = [
     "artis",
@@ -270,6 +289,21 @@ def parse_rss_date(value):
     if not value:
         return None
 
+
+def is_blocked_news_source(source):
+    normalized = normalize_text(source)
+
+    return any(blocked in normalized for blocked in NEWS_BLOCKED_SOURCES)
+
+
+def is_recent_news_item(published_at, max_age_days=NEWS_MAX_AGE_DAYS):
+    if published_at is None:
+        return False
+
+    cutoff = datetime.now(ISTANBUL_TZ) - timedelta(days=max_age_days)
+
+    return published_at >= cutoff
+
     try:
         parsed = parsedate_to_datetime(value)
 
@@ -310,10 +344,15 @@ def fetch_news_items(limit=8):
                 source = node.findtext("source") or feed["name"]
                 published_at = parse_rss_date(node.findtext("pubDate"))
 
+                clean_source = source.strip()
+
+                if is_blocked_news_source(clean_source) or not is_recent_news_item(published_at):
+                    continue
+
                 items.append(
                     {
                         "title": title,
-                        "source": source.strip(),
+                        "source": clean_source,
                         "url": (node.findtext("link") or "").strip(),
                         "published_at": published_at.isoformat() if published_at else None,
                     }
@@ -331,7 +370,7 @@ def score_news_items(news_items):
         return {
             "score": 0,
             "direction": "neutral",
-            "summary": "Guncel haber basligi okunamadi; analiz sadece Brent ve USD/TL verisine dayaniyor.",
+            "summary": "Son gunlerde filtreye uyan guvenilir haber basligi bulunamadi; haber etkisi notr kabul edildi.",
         }
 
     score = 0
@@ -344,25 +383,32 @@ def score_news_items(news_items):
         increase_hits = sum(1 for keyword in NEWS_INCREASE_KEYWORDS if normalize_text(keyword) in normalized)
         decrease_hits = sum(1 for keyword in NEWS_DECREASE_KEYWORDS if normalize_text(keyword) in normalized)
         has_action = any(normalize_text(keyword) in normalized for keyword in NEWS_ACTION_KEYWORDS)
+        has_strong_action = any(normalize_text(keyword) in normalized for keyword in NEWS_STRONG_ACTION_KEYWORDS)
         is_question = any(normalize_text(keyword) in normalized for keyword in NEWS_QUESTION_KEYWORDS)
         item_score = 0
 
-        if increase_hits and has_action:
-            item_score += 28
+        if increase_hits and has_strong_action:
+            item_score += 34
+            strong_direction = "increase"
+        elif increase_hits and has_action:
+            item_score += 22
             strong_direction = "increase"
         elif increase_hits:
-            item_score += 8
+            item_score += 5
 
-        if decrease_hits and has_action:
-            item_score -= 28
+        if decrease_hits and has_strong_action:
+            item_score -= 34
+            strong_direction = "decrease"
+        elif decrease_hits and has_action:
+            item_score -= 22
             strong_direction = "decrease"
         elif decrease_hits:
-            item_score -= 8
+            item_score -= 5
 
         if increase_hits and decrease_hits and is_question:
             item_score = 0
         elif is_question:
-            item_score = round(item_score * 0.55)
+            item_score = round(item_score * 0.35)
 
         item_score = clamp(item_score, -32, 32)
 
@@ -448,6 +494,38 @@ def summarize_price_changes(price_changes):
         "direction": direction,
         "summary": summary,
         "items": sorted(items, key=lambda item: abs(item["score"]), reverse=True),
+    }
+
+
+def merge_price_memory(current_analysis, previous_price_memory=None):
+    previous_price_memory = previous_price_memory or {}
+
+    if current_analysis["score"] != 0:
+        return {
+            **current_analysis,
+            "memory_source": "current_run",
+            "remembered_at": datetime.now(ISTANBUL_TZ).isoformat(),
+        }
+
+    previous_score = int(previous_price_memory.get("score") or 0)
+
+    if previous_score == 0:
+        return {
+            **current_analysis,
+            "memory_source": "none",
+            "remembered_at": None,
+        }
+
+    remembered_at = previous_price_memory.get("remembered_at")
+    summary = previous_price_memory.get("summary") or "Bugun daha once yakalanan pompa fiyat degisimi analizde korunuyor."
+
+    return {
+        "score": previous_score,
+        "direction": previous_price_memory.get("direction", "neutral"),
+        "summary": summary,
+        "items": previous_price_memory.get("items", []),
+        "memory_source": "same_day_memory",
+        "remembered_at": remembered_at,
     }
 
 
@@ -725,11 +803,11 @@ def call_gemini_analysis(payload):
         return None
 
 
-def build_market_signal(price_changes=None):
+def build_market_signal(price_changes=None, previous_price_memory=None):
     brent_history = fetch_brent_history()
     usd_history = fetch_usd_try_history()
     news_items = fetch_news_items()
-    price_analysis = summarize_price_changes(price_changes or [])
+    price_analysis = merge_price_memory(summarize_price_changes(price_changes or []), previous_price_memory)
 
     latest_brent = brent_history[-1]
     latest_usd = usd_history[-1]
@@ -825,6 +903,10 @@ def build_market_signal(price_changes=None):
             "price_direction": price_analysis["direction"],
             "price_summary": price_analysis["summary"],
             "price_items": price_analysis["items"],
+            "price_memory": {
+                "source": price_analysis.get("memory_source", "none"),
+                "remembered_at": price_analysis.get("remembered_at"),
+            },
             "factors": analysis_factors,
             "ai": ai_result,
         },

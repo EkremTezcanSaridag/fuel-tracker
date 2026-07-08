@@ -62,6 +62,8 @@ Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, P
 
 Opsiyonel ücretsiz AI analizi için GitHub Actions secrets tarafına `GEMINI_API_KEY` eklenebilir. `GEMINI_MODEL` verilmezse backend `gemini-2.5-flash` modelini kullanır; anahtar yoksa sistem kural tabanlı analizle çalışmaya devam eder.
 
+Piyasa sinyali haber kalitesi için sosyal medya kaynaklarını filtreler, son birkaç gün içindeki başlıkları dikkate alır ve soru formatındaki haberleri düşük ağırlıklandırır. Aynı gün yakalanan pompa zam/indirim etkisi, gün içinde sonraki çalıştırmalarda da analizde korunur.
+
 ## Uygulama Ekranları
 
 - Ana Sayfa: güncel ortalama fiyatlar, haber destekli piyasa sinyali, son yenileme zamanı ve 7 günlük trend

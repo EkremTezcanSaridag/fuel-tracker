@@ -326,9 +326,43 @@ def bildirim_log_kaydet(
         print(f"Bildirim audit log kaydi yazilamadi: {hata}")
 
 
+def gunluk_pompa_hafizasi_oku():
+    bugun = datetime.now(ISTANBUL_TZ).strftime("%Y-%m-%d")
+
+    try:
+        sonuc = (
+            supabase.table("market_signals")
+            .select("analysis")
+            .eq("signal_date", bugun)
+            .limit(1)
+            .execute()
+        )
+    except Exception as hata:
+        print(f"Gunluk pompa hafizasi okunamadi: {hata}")
+        return None
+
+    if not sonuc.data:
+        return None
+
+    analysis = sonuc.data[0].get("analysis") or {}
+    price_score = int(analysis.get("price_score") or 0)
+
+    if price_score == 0:
+        return None
+
+    return {
+        "score": price_score,
+        "direction": analysis.get("price_direction", "neutral"),
+        "summary": analysis.get("price_summary"),
+        "items": analysis.get("price_items", []),
+        "remembered_at": analysis.get("price_memory", {}).get("remembered_at")
+        or datetime.now(ISTANBUL_TZ).isoformat(),
+    }
+
+
 def piyasa_sinyali_kaydet(degisimler=None):
     try:
-        sinyal = build_market_signal(degisimler or [])
+        sinyal = build_market_signal(degisimler or [], gunluk_pompa_hafizasi_oku())
         supabase.table("market_signals").upsert(sinyal, on_conflict="signal_date").execute()
         print(
             "Piyasa sinyali kaydedildi: "
