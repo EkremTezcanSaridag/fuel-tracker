@@ -665,7 +665,7 @@ def call_gemini_analysis(payload):
     if not api_key:
         return None
 
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
     schema = {
         "type": "object",
         "properties": {
