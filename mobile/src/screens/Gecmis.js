@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -7,7 +7,6 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 
 const chartHeight = 146
-
 function buildPoints(values, chartWidth, chartDomain) {
   const horizontalPadding = 8
   const verticalPadding = 12
@@ -40,6 +39,24 @@ function buildSegments(points, strokeWidth) {
   })
 }
 
+function buildChartGuides(chartDomain) {
+  const middle = (chartDomain.min + chartDomain.max) / 2
+
+  return [
+    { label: `${Math.round(chartDomain.max)} TL`, top: 24 },
+    { label: `${Math.round(middle)} TL`, top: 72 },
+    { label: `${Math.round(chartDomain.min)} TL`, top: 120 },
+  ]
+}
+
+function guideLeft(index, count, chartWidth, padding) {
+  if (count <= 1) {
+    return chartWidth / 2
+  }
+
+  return padding + (index * (chartWidth - padding * 2)) / (count - 1)
+}
+
 export default function Gecmis() {
   const { width } = useWindowDimensions()
   const { data } = useFuelData()
@@ -49,6 +66,7 @@ export default function Gecmis() {
   const metrics = data.historyMetrics
   const recentChanges = data.recentChanges
   const chartWidth = Math.max(218, Math.min(width - 92, 330))
+  const chartGuides = useMemo(() => buildChartGuides(chartDomain), [chartDomain])
 
   const chartSeries = useMemo(
     () =>
@@ -104,38 +122,69 @@ export default function Gecmis() {
 
           <View style={styles.chartBox}>
             <View style={[styles.chartPlot, { width: chartWidth, height: chartHeight }]}>
-              <View style={[styles.gridLine, { top: 28 }]} />
-              <View style={[styles.gridLine, { top: 72 }]} />
-              <View style={[styles.gridLine, { top: 116 }]} />
+              <View style={styles.chartBackdropTop} />
+              <View style={styles.chartBackdropBottom} />
+
+              {chartLabels.map((label, index) => (
+                <View
+                  key={`${label}-${index}-guide`}
+                  style={[
+                    styles.verticalGridLine,
+                    {
+                      left: guideLeft(index, chartLabels.length, chartWidth, 8),
+                    },
+                  ]}
+                />
+              ))}
+
+              {chartGuides.map((guide) => (
+                <View key={guide.label} style={[styles.gridGuide, { top: guide.top }]}>
+                  <View style={styles.gridLine} />
+                  <Text style={styles.gridLabel}>{guide.label}</Text>
+                </View>
+              ))}
 
               {chartSeries.map((series) => (
                 <View key={series.key} style={styles.lineLayer}>
                   {series.segments.map((segment, index) => (
-                    <View
-                      key={`${series.key}-${index}`}
-                      style={[
-                        styles.lineSegment,
-                        {
-                          backgroundColor: series.color,
-                          height: series.strokeWidth,
-                          left: segment.left,
-                          top: segment.top,
-                          transform: [{ rotate: `${segment.angle}deg` }],
-                          width: segment.width,
-                        },
-                      ]}
-                    />
+                    <Fragment key={`${series.key}-${index}`}>
+                      <View
+                        style={[
+                          styles.lineSegmentGlow,
+                          {
+                            backgroundColor: series.color,
+                            left: segment.left,
+                            top: segment.top - 2,
+                            transform: [{ rotate: `${segment.angle}deg` }],
+                            width: segment.width,
+                          },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.lineSegment,
+                          {
+                            backgroundColor: series.color,
+                            height: series.strokeWidth,
+                            left: segment.left,
+                            top: segment.top,
+                            transform: [{ rotate: `${segment.angle}deg` }],
+                            width: segment.width,
+                          },
+                        ]}
+                      />
+                    </Fragment>
                   ))}
                   {series.points.map((point, index) => (
                     <View
                       key={`${series.key}-point-${index}`}
                       style={[
-                        styles.chartPoint,
+                        index === series.points.length - 1 ? styles.chartPointActive : styles.chartPoint,
                         {
                           backgroundColor: series.key === 'Benzin' ? series.color : colors.bg,
                           borderColor: series.color,
-                          left: point.x - 3,
-                          top: point.y - 3,
+                          left: point.x - (index === series.points.length - 1 ? 5 : 3),
+                          top: point.y - (index === series.points.length - 1 ? 5 : 3),
                         },
                       ]}
                     />
@@ -322,25 +371,63 @@ const styles = StyleSheet.create({
   },
   chartBox: {
     alignItems: 'center',
-    backgroundColor: colors.bg,
-    borderColor: colors.border,
+    backgroundColor: '#071527',
+    borderColor: '#223752',
     borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
-    paddingHorizontal: 10,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   chartPlot: {
     position: 'relative',
   },
-  gridLine: {
-    backgroundColor: '#243653',
-    height: 1,
+  chartBackdropTop: {
+    backgroundColor: 'rgba(26, 45, 72, 0.42)',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    height: '48%',
     left: 0,
-    opacity: 0.85,
     position: 'absolute',
     right: 0,
+    top: 0,
+  },
+  chartBackdropBottom: {
+    backgroundColor: 'rgba(7, 211, 156, 0.08)',
+    bottom: 0,
+    height: '42%',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  gridGuide: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  gridLine: {
+    backgroundColor: '#2A4161',
+    flex: 1,
+    height: 1,
+    opacity: 0.72,
+  },
+  gridLabel: {
+    color: colors.muted,
+    fontSize: 9,
+    fontWeight: '800',
+    marginLeft: 6,
+    width: 28,
+  },
+  verticalGridLine: {
+    backgroundColor: '#1C2D45',
+    bottom: 0,
+    opacity: 0.32,
+    position: 'absolute',
+    top: 0,
+    width: 1,
   },
   lineLayer: {
     bottom: 0,
@@ -353,12 +440,26 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     position: 'absolute',
   },
+  lineSegmentGlow: {
+    borderRadius: 999,
+    height: 7,
+    opacity: 0.14,
+    position: 'absolute',
+  },
   chartPoint: {
     borderRadius: 999,
     borderWidth: 2,
     height: 6,
     position: 'absolute',
     width: 6,
+  },
+  chartPointActive: {
+    borderRadius: 999,
+    borderWidth: 2,
+    height: 10,
+    position: 'absolute',
+    width: 10,
+    ...shadows.soft,
   },
   chartLabels: {
     flexDirection: 'row',

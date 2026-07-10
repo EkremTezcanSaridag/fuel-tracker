@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -20,6 +20,11 @@ const signalToneIcons = {
 
 const chartHeight = 118
 const chartDomain = { min: 20, max: 70 }
+const chartGuides = [
+  { label: '65 TL', top: 16 },
+  { label: '45 TL', top: 58 },
+  { label: '25 TL', top: 100 },
+]
 
 function buildPoints(values, chartWidth) {
   const horizontalPadding = 6
@@ -51,6 +56,20 @@ function buildSegments(points, strokeWidth) {
       width: length,
     }
   })
+}
+
+function guideLeft(index, count, chartWidth, padding) {
+  if (count <= 1) {
+    return chartWidth / 2
+  }
+
+  return padding + (index * (chartWidth - padding * 2)) / (count - 1)
+}
+
+function formatLegendValue(values) {
+  const lastValue = values[values.length - 1]
+
+  return Number.isFinite(lastValue) ? `${lastValue.toFixed(2)} TL` : '--'
 }
 
 export default function AnaSayfa() {
@@ -252,41 +271,72 @@ export default function AnaSayfa() {
 
           <View style={styles.chartArea}>
             <View style={[styles.chartPlot, { width: chartWidth, height: chartHeight }]}>
-              <View style={[styles.gridLine, { top: 28 }]} />
-              <View style={[styles.gridLine, { top: 58 }]} />
-              <View style={[styles.gridLine, { top: 88 }]} />
+              <View style={styles.chartBackdropTop} />
+              <View style={styles.chartBackdropBottom} />
+
+              {days.map((day, index) => (
+                <View
+                  key={`${day}-guide`}
+                  style={[
+                    styles.verticalGridLine,
+                    {
+                      left: guideLeft(index, days.length, chartWidth, 6),
+                    },
+                  ]}
+                />
+              ))}
+
+              {chartGuides.map((guide) => (
+                <View key={guide.label} style={[styles.gridGuide, { top: guide.top }]}>
+                  <View style={styles.gridLine} />
+                  <Text style={styles.gridLabel}>{guide.label}</Text>
+                </View>
+              ))}
 
               {chartSeries.map((series) => (
                 <View key={series.key} style={styles.lineLayer}>
                   {series.segments.map((segment, index) => (
-                    <View
-                      key={`${series.key}-${index}`}
-                      style={[
-                        styles.lineSegment,
-                        {
-                          backgroundColor: series.color,
-                          height: series.strokeWidth,
-                          left: segment.left,
-                          opacity: series.opacity,
-                          top: segment.top,
-                          transform: [{ rotate: `${segment.angle}deg` }],
-                          width: segment.width,
-                        },
-                      ]}
-                    />
+                    <Fragment key={`${series.key}-${index}`}>
+                      <View
+                        style={[
+                          styles.lineSegmentGlow,
+                          {
+                            backgroundColor: series.color,
+                            left: segment.left,
+                            top: segment.top - 2,
+                            transform: [{ rotate: `${segment.angle}deg` }],
+                            width: segment.width,
+                          },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.lineSegment,
+                          {
+                            backgroundColor: series.color,
+                            height: series.strokeWidth,
+                            left: segment.left,
+                            opacity: series.opacity,
+                            top: segment.top,
+                            transform: [{ rotate: `${segment.angle}deg` }],
+                            width: segment.width,
+                          },
+                        ]}
+                      />
+                    </Fragment>
                   ))}
 
                   {series.points.map((point, index) => (
                     <View
                       key={`${series.key}-point-${index}`}
                       style={[
-                        styles.chartPoint,
+                        index === series.points.length - 1 ? styles.chartPointActive : styles.chartPoint,
                         {
                           backgroundColor: series.key === 'Motorin' ? series.color : colors.bg,
                           borderColor: series.color,
-                          left: point.x - 3,
+                          left: point.x - (index === series.points.length - 1 ? 5 : 3),
                           opacity: series.opacity,
-                          top: point.y - 3,
+                          top: point.y - (index === series.points.length - 1 ? 5 : 3),
                         },
                       ]}
                     />
@@ -309,6 +359,7 @@ export default function AnaSayfa() {
               <View key={item.key} style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: item.color }]} />
                 <Text style={styles.legendText}>{item.key}</Text>
+                <Text style={styles.legendValue}>{formatLegendValue(item.values)}</Text>
               </View>
             ))}
           </View>
@@ -690,25 +741,63 @@ const styles = StyleSheet.create({
   },
   chartArea: {
     alignItems: 'center',
-    backgroundColor: colors.bg,
-    borderColor: colors.border,
+    backgroundColor: '#071527',
+    borderColor: '#223752',
     borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
-    paddingHorizontal: 10,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   chartPlot: {
     position: 'relative',
   },
-  gridLine: {
-    backgroundColor: '#243653',
-    height: 1,
+  chartBackdropTop: {
+    backgroundColor: 'rgba(26, 45, 72, 0.42)',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    height: '46%',
     left: 0,
-    opacity: 0.85,
     position: 'absolute',
     right: 0,
+    top: 0,
+  },
+  chartBackdropBottom: {
+    backgroundColor: 'rgba(7, 211, 156, 0.08)',
+    bottom: 0,
+    height: '42%',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  gridGuide: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  gridLine: {
+    backgroundColor: '#2A4161',
+    flex: 1,
+    height: 1,
+    opacity: 0.72,
+  },
+  gridLabel: {
+    color: colors.muted,
+    fontSize: 9,
+    fontWeight: '800',
+    marginLeft: 6,
+    width: 32,
+  },
+  verticalGridLine: {
+    backgroundColor: '#1C2D45',
+    bottom: 0,
+    opacity: 0.36,
+    position: 'absolute',
+    top: 0,
+    width: 1,
   },
   lineLayer: {
     bottom: 0,
@@ -721,12 +810,26 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     position: 'absolute',
   },
+  lineSegmentGlow: {
+    borderRadius: 999,
+    height: 7,
+    opacity: 0.14,
+    position: 'absolute',
+  },
   chartPoint: {
     borderRadius: 999,
     borderWidth: 2,
     height: 6,
     position: 'absolute',
     width: 6,
+  },
+  chartPointActive: {
+    borderRadius: 999,
+    borderWidth: 2,
+    height: 10,
+    position: 'absolute',
+    width: 10,
+    ...shadows.soft,
   },
   dayRow: {
     flexDirection: 'row',
@@ -750,6 +853,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     marginHorizontal: 7,
+    marginBottom: 6,
   },
   legendDot: {
     borderRadius: 999,
@@ -761,5 +865,11 @@ const styles = StyleSheet.create({
     color: colors.mutedSoft,
     fontSize: 11,
     fontWeight: '800',
+  },
+  legendValue: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '900',
+    marginLeft: 5,
   },
 })
