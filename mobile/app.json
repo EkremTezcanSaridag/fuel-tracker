@@ -2,7 +2,7 @@
   "expo": {
     "name": "Yakıt Radar",
     "slug": "pompa-metre",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "com.pompametre.app",
-      "versionCode": 5,
+      "versionCode": 6,
       "permissions": [
         "POST_NOTIFICATIONS"
       ],
