@@ -289,6 +289,16 @@ def parse_rss_date(value):
     if not value:
         return None
 
+    try:
+        parsed = parsedate_to_datetime(value)
+
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+
+        return parsed.astimezone(ISTANBUL_TZ)
+    except Exception:
+        return None
+
 
 def is_blocked_news_source(source):
     normalized = normalize_text(source)
@@ -303,16 +313,6 @@ def is_recent_news_item(published_at, max_age_days=NEWS_MAX_AGE_DAYS):
     cutoff = datetime.now(ISTANBUL_TZ) - timedelta(days=max_age_days)
 
     return published_at >= cutoff
-
-    try:
-        parsed = parsedate_to_datetime(value)
-
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-
-        return parsed.astimezone(ISTANBUL_TZ)
-    except Exception:
-        return None
 
 
 def fetch_news_items(limit=8):

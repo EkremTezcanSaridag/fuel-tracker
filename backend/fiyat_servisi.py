@@ -156,8 +156,9 @@ def degisim_ozeti(degisimler, limit=8):
             "city": degisim["city"],
             "fuel": degisim["fuel"],
             "diff": degisim["diff"],
-            "old_price": degisim["old_price"],
-            "new_price": degisim["new_price"],
+            "old_price": degisim.get("old_price"),
+            "new_price": degisim.get("new_price"),
+            "source": degisim.get("source", "price_change"),
         }
         for degisim in degisimler[:limit]
     ]
@@ -268,6 +269,23 @@ def token_icin_degisim_sec(token_kayit, degisimler):
 def bildirim_mesaji_olustur(token_kayit, degisim):
     yon = "artti" if degisim["diff"] > 0 else "dustu"
     hareket = "artis" if degisim["diff"] > 0 else "indirim"
+    yeni_fiyat = degisim.get("new_price")
+
+    if degisim.get("source") == "price_memory":
+        return {
+            "to": token_kayit["expo_push_token"],
+            "sound": "default",
+            "title": f"{degisim['fuel']} icin gunluk {hareket} sinyali",
+            "body": (
+                f"{degisim['city']} {degisim['fuel']} tarafinda bugun "
+                f"{abs(degisim['diff']):.2f} TL {yon} etkisi korunuyor."
+            ),
+            "data": {
+                "city": degisim["city"],
+                "fuel": degisim["fuel"],
+                "type": "fuel_memory_change",
+            },
+        }
 
     return {
         "to": token_kayit["expo_push_token"],
@@ -275,7 +293,7 @@ def bildirim_mesaji_olustur(token_kayit, degisim):
         "title": f"{degisim['fuel']} fiyatinda {hareket}",
         "body": (
             f"{degisim['city']} {degisim['fuel']} {abs(degisim['diff']):.2f} TL {yon}. "
-            f"Yeni fiyat: {fiyat_format(degisim['new_price'])}"
+            f"Yeni fiyat: {fiyat_format(yeni_fiyat)}"
         ),
         "data": {
             "city": degisim["city"],
@@ -360,20 +378,90 @@ def gunluk_pompa_hafizasi_oku():
     }
 
 
-def piyasa_sinyali_kaydet(degisimler=None):
+def gunluk_hafiza_bildirimi_gonderildi_mi():
+    bugun = datetime.now(ISTANBUL_TZ).strftime("%Y-%m-%dT00:00:00+03:00")
+
     try:
-        sinyal = build_market_signal(degisimler or [], gunluk_pompa_hafizasi_oku())
+        sonuc = (
+            supabase.table("notification_logs")
+            .select("id")
+            .eq("reason", "price_memory")
+            .gte("created_at", bugun)
+            .limit(1)
+            .execute()
+        )
+    except Exception as hata:
+        print(f"Gunluk hafiza bildirim logu okunamadi: {hata}")
+        return False
+
+    return bool(sonuc.data)
+
+
+def hafiza_degisimi_olustur(price_memory):
+    if not price_memory or int(price_memory.get("score") or 0) == 0:
+        return []
+
+    degisimler = []
+
+    for item in price_memory.get("items") or []:
+        average_diff = float(item.get("average_diff") or 0)
+
+        if average_diff == 0:
+            continue
+
+        degisimler.append(
+            {
+                "city": "Turkiye geneli",
+                "fuel": item.get("fuel", "Yakit"),
+                "field": None,
+                "old_price": None,
+                "new_price": None,
+                "diff": average_diff,
+                "direction": "increase" if average_diff > 0 else "decrease",
+                "source": "price_memory",
+            }
+        )
+
+    return sorted(degisimler, key=lambda item: abs(item["diff"]), reverse=True)
+
+
+def piyasa_sinyali_kaydet(degisimler=None, onceki_pompa_hafizasi=None):
+    try:
+        sinyal = build_market_signal(degisimler or [], onceki_pompa_hafizasi)
         supabase.table("market_signals").upsert(sinyal, on_conflict="signal_date").execute()
         print(
             "Piyasa sinyali kaydedildi: "
             f"{sinyal['direction']} / {sinyal['confidence']} / skor {sinyal['score']}"
         )
+        return sinyal
     except Exception as hata:
         print("Piyasa sinyali kaydedilemedi. backend/supabase_market_signals.sql dosyasini Supabase'de calistirin.")
         print(f"Detay: {hata}")
+        return None
 
 
-def fiyat_bildirimleri_gonder(degisimler):
+def fiyat_bildirimleri_gonder(degisimler, price_memory=None):
+    notification_reason = None
+
+    if not degisimler:
+        hafiza_degisimi = hafiza_degisimi_olustur(price_memory)
+
+        if hafiza_degisimi and not gunluk_hafiza_bildirimi_gonderildi_mi():
+            degisimler = hafiza_degisimi
+            notification_reason = "price_memory"
+            print("Anlik fiyat degisimi yok, gunluk pompa hafizasi bildirimi deneniyor")
+        else:
+            reason = "price_memory_already_sent" if hafiza_degisimi else "no_changes"
+            print("Fiyat degisimi yok, bildirim gonderilmedi")
+            bildirim_log_kaydet(
+                0,
+                0,
+                status="skipped",
+                reason=reason,
+                details={"price_memory": price_memory or {}},
+            )
+            return
+
     if not degisimler:
         print("Fiyat degisimi yok, bildirim gonderilmedi")
         bildirim_log_kaydet(0, 0, status="skipped", reason="no_changes")
@@ -381,12 +469,19 @@ def fiyat_bildirimleri_gonder(degisimler):
 
     print(f"Bildirim icin {len(degisimler)} fiyat degisimi bulundu")
     for degisim in degisimler[:8]:
-        print(
-            "  Degisim: "
-            f"{degisim['city']} {degisim['fuel']} "
-            f"{degisim['old_price']:.2f} -> {degisim['new_price']:.2f} "
-            f"({degisim['diff']:+.2f} TL)"
-        )
+        if degisim.get("source") == "price_memory":
+            print(
+                "  Hafiza degisimi: "
+                f"{degisim['city']} {degisim['fuel']} "
+                f"({degisim['diff']:+.2f} TL)"
+            )
+        else:
+            print(
+                "  Degisim: "
+                f"{degisim['city']} {degisim['fuel']} "
+                f"{degisim['old_price']:.2f} -> {degisim['new_price']:.2f} "
+                f"({degisim['diff']:+.2f} TL)"
+            )
 
     tokenlar = push_tokenlarini_oku()
 
@@ -397,7 +492,11 @@ def fiyat_bildirimleri_gonder(degisimler):
             len(degisimler),
             status="skipped",
             reason="no_tokens",
-            details={"changes": degisim_ozeti(degisimler)},
+            details={
+                "changes": degisim_ozeti(degisimler),
+                "price_memory": price_memory or {},
+                "trigger": notification_reason or "price_change",
+            },
         )
         return
 
@@ -434,7 +533,11 @@ def fiyat_bildirimleri_gonder(degisimler):
             skipped_quiet_count=skipped_quiet_count,
             skipped_empty_token_count=skipped_empty_token_count,
             skipped_no_match_count=skipped_no_match_count,
-            details={"changes": degisim_ozeti(degisimler)},
+            details={
+                "changes": degisim_ozeti(degisimler),
+                "price_memory": price_memory or {},
+                "trigger": notification_reason or "price_change",
+            },
         )
         return
 
@@ -469,7 +572,12 @@ def fiyat_bildirimleri_gonder(degisimler):
             skipped_empty_token_count=skipped_empty_token_count,
             skipped_no_match_count=skipped_no_match_count,
             error_message=str(hata),
-            details={"changes": degisim_ozeti(degisimler), "expo_responses": expo_responses},
+            details={
+                "changes": degisim_ozeti(degisimler),
+                "expo_responses": expo_responses,
+                "price_memory": price_memory or {},
+                "trigger": notification_reason or "price_change",
+            },
         )
         return
 
@@ -477,12 +585,18 @@ def fiyat_bildirimleri_gonder(degisimler):
         gonderilen,
         len(degisimler),
         status="sent",
+        reason=notification_reason,
         token_count=len(tokenlar),
         candidate_count=len(mesajlar),
         skipped_quiet_count=skipped_quiet_count,
         skipped_empty_token_count=skipped_empty_token_count,
         skipped_no_match_count=skipped_no_match_count,
-        details={"changes": degisim_ozeti(degisimler), "expo_responses": expo_responses},
+        details={
+            "changes": degisim_ozeti(degisimler),
+            "expo_responses": expo_responses,
+            "price_memory": price_memory or {},
+            "trigger": notification_reason or "price_change",
+        },
     )
     print(f"{gonderilen} push bildirimi Expo Push API'ye gonderildi")
 
@@ -503,5 +617,16 @@ if __name__ == "__main__":
 
     supabase_yaz(veri)
     gecmis_kaydet(veri)
-    piyasa_sinyali_kaydet(degisimler)
-    fiyat_bildirimleri_gonder(degisimler)
+    onceki_pompa_hafizasi = gunluk_pompa_hafizasi_oku()
+    sinyal = piyasa_sinyali_kaydet(degisimler, onceki_pompa_hafizasi)
+    price_memory = (sinyal or {}).get("analysis", {})
+    fiyat_bildirimleri_gonder(
+        degisimler,
+        {
+            "score": price_memory.get("price_score", 0),
+            "direction": price_memory.get("price_direction", "neutral"),
+            "summary": price_memory.get("price_summary"),
+            "items": price_memory.get("price_items", []),
+            "remembered_at": price_memory.get("price_memory", {}).get("remembered_at"),
+        },
+    )
