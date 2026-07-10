@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { fallbackFuelData, loadFuelData } from '../services/fuelData'
 
 export function useFuelData() {
+  const followUpTimerRef = useRef(null)
+  const mountedRef = useRef(true)
   const [state, setState] = useState({
     data: fallbackFuelData,
     loading: true,
@@ -21,10 +23,31 @@ export function useFuelData() {
       loading: false,
       refreshing: false,
     })
+
+    if (data.refreshRequest?.status === 'queued') {
+      if (followUpTimerRef.current) {
+        clearTimeout(followUpTimerRef.current)
+      }
+
+      followUpTimerRef.current = setTimeout(async () => {
+        const nextData = await loadFuelData({ refresh: true, triggerBackend: false })
+
+        if (!mountedRef.current) {
+          return
+        }
+
+        setState({
+          data: nextData,
+          loading: false,
+          refreshing: false,
+        })
+      }, 45 * 1000)
+    }
   }, [])
 
   useEffect(() => {
     let isMounted = true
+    mountedRef.current = true
 
     loadFuelData().then((data) => {
       if (!isMounted) {
@@ -40,6 +63,11 @@ export function useFuelData() {
 
     return () => {
       isMounted = false
+      mountedRef.current = false
+
+      if (followUpTimerRef.current) {
+        clearTimeout(followUpTimerRef.current)
+      }
     }
   }, [])
 

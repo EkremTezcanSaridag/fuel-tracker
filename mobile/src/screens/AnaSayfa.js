@@ -72,6 +72,26 @@ function formatLegendValue(values) {
   return Number.isFinite(lastValue) ? `${lastValue.toFixed(2)} TL` : '--'
 }
 
+function getUpdateLabel(data, refreshing) {
+  if (refreshing) {
+    return 'Yenileniyor...'
+  }
+
+  if (data.refreshRequest?.status === 'queued') {
+    return 'Backend guncelleme siraya alindi'
+  }
+
+  if (data.refreshRequest?.status === 'skipped' && data.refreshRequest?.reason === 'cooldown') {
+    return 'Guncelleme zaten tetiklendi'
+  }
+
+  if (data.refreshRequest?.status === 'error') {
+    return 'Canli guncelleme tetiklenemedi'
+  }
+
+  return `Son Güncelleme: ${data.lastUpdatedLabel}`
+}
+
 export default function AnaSayfa() {
   const { width } = useWindowDimensions()
   const { data, refresh, refreshing } = useFuelData()
@@ -135,9 +155,7 @@ export default function AnaSayfa() {
           <Text style={styles.metaText}>{data.currentDateLabel}</Text>
           <View style={styles.updatePill}>
             <MaterialCommunityIcons name="clock-outline" size={12} color={colors.accent} />
-            <Text style={styles.updateText}>
-              {refreshing ? 'Yenileniyor...' : `Son Güncelleme: ${data.lastUpdatedLabel}`}
-            </Text>
+            <Text style={styles.updateText}>{getUpdateLabel(data, refreshing)}</Text>
           </View>
         </View>
 

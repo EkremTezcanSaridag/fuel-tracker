@@ -1,0 +1,4 @@
+project_id = "phmmqamvornjwtcrbioh"
+
+[functions.refresh-prices]
+verify_jwt = true

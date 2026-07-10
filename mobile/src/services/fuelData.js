@@ -987,7 +987,15 @@ function buildRecentChanges(history) {
   })
 }
 
-function buildFuelData({ prices, history, source, error, marketSignal = fallbackMarketSignal, syncedAt = new Date() }) {
+function buildFuelData({
+  prices,
+  history,
+  source,
+  error,
+  marketSignal = fallbackMarketSignal,
+  refreshRequest = null,
+  syncedAt = new Date(),
+}) {
   const cityRows = buildCityRows(prices)
 
   return {
@@ -1014,15 +1022,52 @@ function buildFuelData({ prices, history, source, error, marketSignal = fallback
     marketSignal,
     prices,
     recentChanges: buildRecentChanges(history),
+    refreshRequest,
     source,
   }
 }
 
-async function fetchRemoteFuelData() {
+let lastBackendRefreshTriggerAt = 0
+
+async function triggerBackendRefresh() {
+  if (!supabase) {
+    return { status: 'skipped', reason: 'supabase_not_configured' }
+  }
+
+  const now = Date.now()
+
+  if (now - lastBackendRefreshTriggerAt < 60 * 1000) {
+    return { status: 'skipped', reason: 'cooldown' }
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('refresh-prices', {
+      body: {
+        source: 'mobile_refresh',
+      },
+    })
+
+    if (error) {
+      throw error
+    }
+
+    lastBackendRefreshTriggerAt = now
+
+    return data ?? { status: 'queued' }
+  } catch (error) {
+    return {
+      message: error?.message ?? 'Backend yenileme tetiklenemedi.',
+      status: 'error',
+    }
+  }
+}
+
+async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
   if (!supabase) {
     return null
   }
 
+  const refreshRequest = triggerBackend ? await triggerBackendRefresh() : null
   const [pricesResult, historyResult, marketSignalResult, liveMarketSignal] = await Promise.all([
     supabase.from('fiyatlar').select('il, benzin_95, motorin, lpg, guncelleme'),
     supabase
@@ -1058,6 +1103,7 @@ async function fetchRemoteFuelData() {
         ? liveMarketSignal ?? fallbackMarketSignal
         : normalizeMarketSignalRecord(marketSignalResult.data[0]),
     prices: mergePricesWithFallback(remotePrices),
+    refreshRequest,
     source: 'supabase',
   }
 }
@@ -1079,13 +1125,13 @@ function createFallbackFuelData(error) {
 
 let fuelDataCache = null
 
-export async function loadFuelData({ refresh = false } = {}) {
+export async function loadFuelData({ refresh = false, triggerBackend = refresh } = {}) {
   if (fuelDataCache && !refresh) {
     return fuelDataCache
   }
 
   try {
-    const remoteFuelData = await fetchRemoteFuelData()
+    const remoteFuelData = await fetchRemoteFuelData({ triggerBackend })
 
     fuelDataCache = remoteFuelData ? buildFuelData(remoteFuelData) : createFallbackFuelData()
   } catch (error) {
