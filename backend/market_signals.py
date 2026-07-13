@@ -42,14 +42,14 @@ FUEL_SIGNAL_FACTORS = {
 NEWS_FEEDS = [
     {
         "name": "Akaryakit Haberleri",
-        "url": "https://news.google.com/rss/search?q=akaryak%C4%B1t%20zam%20indirim%20motorin%20benzin%20LPG%20T%C3%BCrkiye&hl=tr&gl=TR&ceid=TR:tr",
+        "url": "https://news.google.com/rss/search?q=akaryak%C4%B1t%20zam%20indirim%20motorin%20benzin%20LPG%20T%C3%BCrkiye%20when%3A1d&hl=tr&gl=TR&ceid=TR:tr",
     },
     {
         "name": "Brent Petrol Haberleri",
-        "url": "https://news.google.com/rss/search?q=brent%20petrol%20dolar%20akaryak%C4%B1t%20T%C3%BCrkiye&hl=tr&gl=TR&ceid=TR:tr",
+        "url": "https://news.google.com/rss/search?q=brent%20petrol%20dolar%20akaryak%C4%B1t%20T%C3%BCrkiye%20when%3A1d&hl=tr&gl=TR&ceid=TR:tr",
     },
 ]
-NEWS_MAX_AGE_DAYS = int(os.getenv("NEWS_MAX_AGE_DAYS", "5"))
+NEWS_MAX_AGE_HOURS = int(os.getenv("NEWS_MAX_AGE_HOURS", "24"))
 NEWS_BLOCKED_SOURCES = {
     "instagram.com",
     "facebook.com",
@@ -306,11 +306,11 @@ def is_blocked_news_source(source):
     return any(blocked in normalized for blocked in NEWS_BLOCKED_SOURCES)
 
 
-def is_recent_news_item(published_at, max_age_days=NEWS_MAX_AGE_DAYS):
+def is_recent_news_item(published_at, max_age_hours=NEWS_MAX_AGE_HOURS):
     if published_at is None:
         return False
 
-    cutoff = datetime.now(ISTANBUL_TZ) - timedelta(days=max_age_days)
+    cutoff = datetime.now(ISTANBUL_TZ) - timedelta(hours=max_age_hours)
 
     return published_at >= cutoff
 
@@ -323,7 +323,11 @@ def fetch_news_items(limit=8):
         try:
             response = requests.get(
                 feed["url"],
-                headers={"User-Agent": "YakitRadar/1.0"},
+                headers={
+                    "User-Agent": "YakitRadar/1.0",
+                    "Cache-Control": "no-cache",
+                    "Pragma": "no-cache",
+                },
                 timeout=20,
             )
             response.raise_for_status()
@@ -340,7 +344,6 @@ def fetch_news_items(limit=8):
                 if normalized_title in seen_titles:
                     continue
 
-                seen_titles.add(normalized_title)
                 source = node.findtext("source") or feed["name"]
                 published_at = parse_rss_date(node.findtext("pubDate"))
 
@@ -349,6 +352,7 @@ def fetch_news_items(limit=8):
                 if is_blocked_news_source(clean_source) or not is_recent_news_item(published_at):
                     continue
 
+                seen_titles.add(normalized_title)
                 items.append(
                     {
                         "title": title,

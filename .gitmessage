@@ -1,0 +1,8 @@
+Faz: <kisa ve net is>
+
+- [x] Degisiklik: <ne yapildi>
+- [x] Neden: <hangi sorun/cozum icin yapildi>
+- [x] Etki: <mobil/backend/db/build tarafinda ne degisti>
+- [x] Test: <hangi komutlar veya manuel kontroller gecti>
+- [x] Not: <SQL, secret, build, aksiyon veya kullanici adimi>
+- [x] Sonraki: <bir sonraki faz>

@@ -1,6 +1,7 @@
-# Faz Push Template
+# Faz Commit ve Push Sablonu
 
-Her faz commit/push aciklamasi icin bu sablon kullanilir.
+Her faz commit/push aciklamasi icin kok dizindeki `.gitmessage` dosyasi kullanilir.
+Repo yerel olarak `git config commit.template .gitmessage` komutuyla bu sablona baglanir.
 
 ## Commit Basligi
 
@@ -16,6 +17,7 @@ Faz: <kisa ve net is>
 - [x] Etki: <mobil/backend/db/build tarafinda ne degisti>
 - [x] Test: <hangi komutlar veya manuel kontroller gecti>
 - [x] Not: <SQL, secret, build, aksiyon veya kullanici adimi>
+- [x] Sonraki: <bir sonraki faz>
 ```
 
 ## Final Rapor Basliklari
@@ -32,4 +34,3 @@ Kullanici adimi:
 Sonraki faz:
 - ...
 ```
-

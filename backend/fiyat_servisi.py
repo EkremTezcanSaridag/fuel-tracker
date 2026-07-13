@@ -16,7 +16,11 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
 NOTIFICATION_MIN_CHANGE = float(os.getenv("NOTIFICATION_MIN_CHANGE", "0.01"))
+MAX_REASONABLE_PRICE_CHANGE = float(os.getenv("MAX_REASONABLE_PRICE_CHANGE", "8.0"))
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+FUEL_PRICES_URL = "https://www.aytemiz.com.tr/akaryakit-fiyatlari/benzin-fiyatlari"
+LPG_PRICES_URL = "https://www.aytemiz.com.tr/akaryakit-fiyatlari/lpg-fiyatlari"
+MIN_EXPECTED_CITY_COUNT = 80
 
 
 def resolve_istanbul_timezone():
@@ -72,10 +76,9 @@ def liste_degeri(deger):
     return []
 
 
-def tum_fiyatlari_cek():
-    url = "https://www.aytemiz.com.tr/akaryakit-fiyatlari/benzin-fiyatlari"
+def akaryakit_fiyatlarini_cek():
     headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers, timeout=20)
+    response = requests.get(FUEL_PRICES_URL, headers=headers, timeout=20)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -97,9 +100,67 @@ def tum_fiyatlari_cek():
             "il": il_adi,
             "benzin_95": eslesme.group(2),
             "motorin": eslesme.group(3),
-            "lpg": eslesme.group(5),
             "guncelleme": guncelleme,
         }
+
+    if len(il_verileri) < MIN_EXPECTED_CITY_COUNT:
+        raise RuntimeError(f"Akaryakit sayfasindan yalnizca {len(il_verileri)} il okunabildi")
+
+    return il_verileri
+
+
+def lpg_fiyatlarini_cek():
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(LPG_PRICES_URL, headers=headers, timeout=20)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, "html.parser")
+    lpg_tablosu = next(
+        (tablo for tablo in soup.find_all("table") if "oto lpg" in tablo.get_text(" ", strip=True).lower()),
+        None,
+    )
+
+    if lpg_tablosu is None:
+        raise RuntimeError("Aytemiz LPG sayfasinda Oto LPG tablosu bulunamadi")
+
+    lpg_verileri = {}
+
+    for satir in lpg_tablosu.find_all("tr"):
+        hucreler = [
+            hucre.get_text(" ", strip=True)
+            for hucre in satir.find_all("td", recursive=False)
+        ]
+
+        if len(hucreler) != 2 or fiyat_parse(hucreler[1]) is None:
+            continue
+
+        lpg_verileri[hucreler[0]] = hucreler[1]
+
+    if len(lpg_verileri) < MIN_EXPECTED_CITY_COUNT:
+        raise RuntimeError(f"LPG sayfasindan yalnizca {len(lpg_verileri)} il okunabildi")
+
+    return lpg_verileri
+
+
+def tum_fiyatlari_cek():
+    il_verileri = akaryakit_fiyatlarini_cek()
+    lpg_verileri = lpg_fiyatlarini_cek()
+    eksik_lpg = []
+
+    for il_adi, kayit in il_verileri.items():
+        lpg_il_adi = il_adi.split("/", 1)[0].strip()
+        lpg_fiyati = lpg_verileri.get(il_adi)
+
+        if lpg_fiyati is None:
+            lpg_fiyati = lpg_verileri.get(lpg_il_adi)
+
+        if lpg_fiyati is None:
+            eksik_lpg.append(il_adi)
+            continue
+
+        kayit["lpg"] = lpg_fiyati
+
+    if eksik_lpg:
+        raise RuntimeError(f"LPG fiyati eslesmeyen iller: {', '.join(eksik_lpg)}")
 
     return il_verileri
 
@@ -133,6 +194,13 @@ def fiyat_degisimlerini_hesapla(onceki, yeni):
             fark = round(yeni_fiyat - eski_fiyat, 2)
 
             if abs(fark) < NOTIFICATION_MIN_CHANGE:
+                continue
+
+            if abs(fark) > MAX_REASONABLE_PRICE_CHANGE:
+                print(
+                    f"Olagan disi fiyat farki bildirimden atlandi: {il_adi} {yakit_adi} "
+                    f"{eski_fiyat:.2f} -> {yeni_fiyat:.2f}"
+                )
                 continue
 
             degisimler.append(
@@ -207,6 +275,13 @@ def gecmis_kaydet(veri):
         benzin_degisim = str(round(ort_benzin - float(onceki_kayit["benzin_95"]), 2))
         motorin_degisim = str(round(ort_motorin - float(onceki_kayit["motorin"]), 2))
         lpg_degisim = str(round(ort_lpg - float(onceki_kayit["lpg"]), 2))
+
+        if abs(float(benzin_degisim)) > MAX_REASONABLE_PRICE_CHANGE:
+            benzin_degisim = "0.00"
+        if abs(float(motorin_degisim)) > MAX_REASONABLE_PRICE_CHANGE:
+            motorin_degisim = "0.00"
+        if abs(float(lpg_degisim)) > MAX_REASONABLE_PRICE_CHANGE:
+            lpg_degisim = "0.00"
 
     supabase.table("gecmis").upsert(
         {
