@@ -59,7 +59,7 @@ function createInstallationId() {
     .slice(2, 10)}`
 }
 
-async function getInstallationId() {
+export async function getInstallationId() {
   const storedId = await AsyncStorage.getItem(INSTALLATION_ID_KEY)
 
   if (storedId) {
@@ -267,6 +267,27 @@ export async function sendTestNotification() {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
     },
   })
+}
+
+export async function requestRemoteTestNotification() {
+  if (!supabase) {
+    throw new Error('Supabase baglantisi yapilandirilmamis.')
+  }
+
+  const installationId = await getInstallationId()
+  const { data, error } = await supabase.functions.invoke('refresh-prices', {
+    body: {
+      installationId,
+      source: 'notification_test',
+      testNotification: true,
+    },
+  })
+
+  if (error) {
+    throw error
+  }
+
+  return data
 }
 
 export async function loadNotificationSettings() {

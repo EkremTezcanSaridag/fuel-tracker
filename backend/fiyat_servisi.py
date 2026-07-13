@@ -545,6 +545,37 @@ def piyasa_sinyali_kaydet(degisimler=None, onceki_pompa_hafizasi=None):
         return None
 
 
+def test_bildirimi_gonder(installation_id):
+    tokenlar = push_tokenlarini_oku()
+    hedefler = [token for token in tokenlar if token.get("installation_id") == installation_id]
+
+    if not hedefler:
+        print("Test bildirimi icin hedef cihaz bulunamadi")
+        bildirim_log_kaydet(0, 0, status="skipped", reason="test_target_not_found")
+        return
+
+    mesajlar = [
+        {
+            "to": token["expo_push_token"],
+            "sound": "default",
+            "title": "Yakit Radar test bildirimi",
+            "body": "Backend, Expo Push ve cihaz tokeni dogrulandi.",
+            "data": {"type": "backend_test"},
+        }
+        for token in hedefler
+        if token.get("expo_push_token")
+    ]
+
+    try:
+        response = requests.post(EXPO_PUSH_URL, headers={"Accept": "application/json", "Content-Type": "application/json"}, json=mesajlar, timeout=30)
+        response.raise_for_status()
+        bildirim_log_kaydet(len(mesajlar), 0, status="sent", reason="test_notification", token_count=len(hedefler), candidate_count=len(mesajlar), details={"expo_responses": [response.json()]})
+        print(f"{len(mesajlar)} test bildirimi Expo Push API'ye gonderildi")
+    except Exception as hata:
+        bildirim_log_kaydet(0, 0, status="error", reason="test_notification", token_count=len(hedefler), error_message=str(hata))
+        print(f"Test bildirimi gonderilemedi: {hata}")
+
+
 def fiyat_bildirimleri_gonder(degisimler, price_memory=None):
     notification_reason = None
 
@@ -736,3 +767,6 @@ if __name__ == "__main__":
             "remembered_at": price_memory.get("price_memory", {}).get("remembered_at"),
         },
     )
+
+    if os.getenv("SEND_TEST_NOTIFICATION", "").lower() == "true":
+        test_bildirimi_gonder(os.getenv("TEST_NOTIFICATION_INSTALLATION_ID", ""))

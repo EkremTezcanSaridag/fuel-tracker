@@ -28,6 +28,12 @@ Deno.serve(async (request) => {
   const repo = Deno.env.get('GITHUB_REPO') ?? 'fuel-tracker'
   const workflow = Deno.env.get('GITHUB_WORKFLOW') ?? 'guncelle.yml'
   const ref = Deno.env.get('GITHUB_REF') ?? 'main'
+  const requestBody = (await request.json().catch(() => ({}))) as {
+    installationId?: string
+    testNotification?: boolean
+  }
+  const testNotification = requestBody.testNotification === true
+  const installationId = requestBody.installationId?.trim()
 
   if (!token) {
     return jsonResponse(
@@ -43,7 +49,15 @@ Deno.serve(async (request) => {
 
   try {
     const response = await fetch(dispatchUrl, {
-      body: JSON.stringify({ ref }),
+      body: JSON.stringify({
+        ref,
+        inputs: testNotification
+          ? {
+              test_installation_id: installationId ?? '',
+              test_notification: 'true',
+            }
+          : {},
+      }),
       headers: {
         Accept: 'application/vnd.github+json',
         Authorization: `Bearer ${token}`,
@@ -71,6 +85,7 @@ Deno.serve(async (request) => {
       message: 'Price refresh workflow queued.',
       queuedAt: new Date().toISOString(),
       status: 'queued',
+      testNotification,
     })
   } catch (error) {
     return jsonResponse(

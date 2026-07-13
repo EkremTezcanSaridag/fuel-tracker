@@ -10,8 +10,8 @@ import {
   getNotificationPermissionStatus,
   loadNotificationSettings,
   requestNotificationAccess,
+  requestRemoteTestNotification,
   saveAndSyncNotificationSettings,
-  sendTestNotification,
 } from '../services/notifications'
 
 const fuelChips = ['Benzin', 'Motorin', 'LPG']
@@ -175,8 +175,8 @@ export default function Bildirimler() {
     setTestBusy(true)
 
     try {
-      await sendTestNotification()
-      Alert.alert('Test bildirimi hazır', 'Birkaç saniye içinde telefonuna test bildirimi düşmeli.')
+      await requestRemoteTestNotification()
+      Alert.alert('Backend testi sırada', 'GitHub Action tamamlandığında gerçek push bildirimi bu cihaza gönderilecek.')
     } catch (error) {
       Alert.alert('Bildirim gönderilemedi', error?.message ?? 'Beklenmeyen bir sorun oluştu.')
     } finally {

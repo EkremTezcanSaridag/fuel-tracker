@@ -5,6 +5,18 @@ on:
     - cron: '0 * * * *'  # Her saat basi (UTC, GitHub Actions scheduler)
   workflow_dispatch:       # Elle de çalıştırılabilir
 
+    inputs:
+      test_notification:
+        description: Hedef cihaza test bildirimi gonder
+        required: false
+        default: false
+        type: boolean
+      test_installation_id:
+        description: Test bildiriminin hedef installation_id degeri
+        required: false
+        default: ''
+        type: string
+
 jobs:
   guncelle:
     runs-on: ubuntu-latest
@@ -28,4 +40,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          SEND_TEST_NOTIFICATION: ${{ inputs.test_notification }}
+          TEST_NOTIFICATION_INSTALLATION_ID: ${{ inputs.test_installation_id }}
         run: python backend/fiyat_servisi.py
