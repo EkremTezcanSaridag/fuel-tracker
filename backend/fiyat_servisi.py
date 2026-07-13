@@ -232,6 +232,36 @@ def degisim_ozeti(degisimler, limit=8):
     ]
 
 
+def fiyat_degisim_gecmisi_kaydet(degisimler):
+    if not degisimler:
+        return
+
+    event_at = datetime.now(ISTANBUL_TZ).isoformat()
+    kayitlar = [
+        {
+            "city": degisim["city"],
+            "fuel": degisim["fuel"],
+            "old_price": degisim["old_price"],
+            "new_price": degisim["new_price"],
+            "diff": degisim["diff"],
+            "direction": degisim["direction"],
+            "event_at": event_at,
+        }
+        for degisim in degisimler
+        if degisim.get("source", "price_change") == "price_change"
+    ]
+
+    if not kayitlar:
+        return
+
+    try:
+        supabase.table("price_change_events").insert(kayitlar).execute()
+        print(f"Fiyat degisimi gecmisine {len(kayitlar)} olay yazildi")
+    except Exception as hata:
+        print("Fiyat degisimi gecmisi yazilamadi. backend/supabase_price_change_events.sql dosyasini calistirin.")
+        print(f"Detay: {hata}")
+
+
 def supabase_yaz(veri):
     for kayit in veri.values():
         supabase.table("fiyatlar").upsert(kayit).execute()
@@ -690,6 +720,7 @@ if __name__ == "__main__":
     for il in sorted(veri.keys()):
         print(f"  {il}: {veri[il]['benzin_95']}")
 
+    fiyat_degisim_gecmisi_kaydet(degisimler)
     supabase_yaz(veri)
     gecmis_kaydet(veri)
     onceki_pompa_hafizasi = gunluk_pompa_hafizasi_oku()

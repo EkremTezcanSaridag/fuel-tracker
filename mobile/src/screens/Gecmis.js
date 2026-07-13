@@ -1,12 +1,19 @@
-import { Fragment, useMemo } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Text, StyleSheet, useWindowDimensions } from 'react-native'
+import { ScrollView, View, Text, StyleSheet, useWindowDimensions, Pressable } from 'react-native'
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
+import { buildHistoryView } from '../services/fuelData'
 
 const chartHeight = 146
+const historyPeriods = [
+  { label: '7G', value: 7 },
+  { label: '30G', value: 30 },
+  { label: '90G', value: 90 },
+  { label: 'Tumu', value: 'all' },
+]
 function buildPoints(values, chartWidth, chartDomain) {
   const horizontalPadding = 8
   const verticalPadding = 12
@@ -60,11 +67,15 @@ function guideLeft(index, count, chartWidth, padding) {
 export default function Gecmis() {
   const { width } = useWindowDimensions()
   const { data } = useFuelData()
-  const trendSeries = data.historyTrendSeries
-  const chartLabels = data.historyChartLabels
-  const chartDomain = data.historyChartDomain
-  const metrics = data.historyMetrics
+  const [period, setPeriod] = useState(30)
+  const historyView = useMemo(() => buildHistoryView(data.history, period), [data.history, period])
+  const trendSeries = historyView.trendSeries
+  const chartLabels = historyView.chartLabels
+  const chartDomain = historyView.chartDomain
+  const metrics = historyView.metrics
   const recentChanges = data.recentChanges
+  const periodLabel = period === 'all' ? 'Tumu' : `${period} Gun`
+  const historySubtitle = period === 'all' ? 'Tum kayitlarin akaryakit degisim trendleri.' : `Son ${period} gunluk akaryakit degisim trendleri.`
   const chartWidth = Math.max(218, Math.min(width - 92, 330))
   const chartGuides = useMemo(() => buildChartGuides(chartDomain), [chartDomain])
 
@@ -97,11 +108,28 @@ export default function Gecmis() {
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
             <Text style={styles.title}>Fiyat Geçmişi</Text>
-            <Text style={styles.subtitle}>Son 30 günlük akaryakıt değişim trendleri.</Text>
+            <Text style={styles.subtitle}>{historySubtitle}</Text>
           </View>
           <View style={styles.periodBadge}>
-            <Text style={styles.periodBadgeText}>30 Gün</Text>
+            <Text style={styles.periodBadgeText}>{periodLabel}</Text>
           </View>
+        </View>
+
+        <View style={styles.periodSelector}>
+          {historyPeriods.map((option) => {
+            const isActive = option.value === period
+
+            return (
+              <Pressable
+                key={option.label}
+                accessibilityRole="button"
+                onPress={() => setPeriod(option.value)}
+                style={[styles.periodOption, isActive && styles.periodOptionActive]}
+              >
+                <Text style={[styles.periodOptionText, isActive && styles.periodOptionTextActive]}>{option.label}</Text>
+              </Pressable>
+            )
+          })}
         </View>
 
         <View style={styles.trendCard}>
@@ -222,34 +250,41 @@ export default function Gecmis() {
         <Text style={styles.changesTitle}>Son Değişiklikler</Text>
 
         <View style={styles.changesCard}>
-          {recentChanges.map((change, index) => (
-            <View
-              key={`${change.date}-${change.tag}-${index}`}
-              style={[styles.changeRow, index !== recentChanges.length - 1 && styles.changeDivider]}
-            >
-              <View style={styles.changeDotWrap}>
-                <MaterialCommunityIcons
-                  name={change.tone === 'up' ? 'arrow-up-bold' : 'arrow-down-bold'}
-                  size={14}
-                  color={change.tone === 'up' ? colors.warning : colors.accent}
-                />
-              </View>
-              <View style={styles.changeCopy}>
-                <View style={styles.changeTitleRow}>
-                  <Text style={styles.changeDate} numberOfLines={1}>
-                    {change.date}
-                  </Text>
-                  <View style={styles.changeTag}>
-                    <Text style={styles.changeTagText}>{change.tag}</Text>
-                  </View>
+          {recentChanges.length ? (
+            recentChanges.map((change, index) => (
+              <View
+                key={`${change.date}-${change.tag}-${index}`}
+                style={[styles.changeRow, index !== recentChanges.length - 1 && styles.changeDivider]}
+              >
+                <View style={styles.changeDotWrap}>
+                  <MaterialCommunityIcons
+                    name={change.tone === 'up' ? 'arrow-up-bold' : 'arrow-down-bold'}
+                    size={14}
+                    color={change.tone === 'up' ? colors.warning : colors.accent}
+                  />
                 </View>
-                <Text style={styles.changeDesc}>{change.desc}</Text>
+                <View style={styles.changeCopy}>
+                  <View style={styles.changeTitleRow}>
+                    <Text style={styles.changeDate} numberOfLines={1}>
+                      {change.date}
+                    </Text>
+                    <View style={styles.changeTag}>
+                      <Text style={styles.changeTagText}>{change.tag}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.changeDesc}>{change.desc}</Text>
+                </View>
+                <Text style={[styles.changeValue, change.tone === 'up' ? styles.changeUp : styles.changeDown]}>
+                  {change.value}
+                </Text>
               </View>
-              <Text style={[styles.changeValue, change.tone === 'up' ? styles.changeUp : styles.changeDown]}>
-                {change.value}
-              </Text>
+            ))
+          ) : (
+            <View style={styles.emptyChanges}>
+              <MaterialCommunityIcons name="clock-outline" size={18} color={colors.mutedSoft} />
+              <Text style={styles.emptyChangesText}>Yeni fiyat değişikliği bekleniyor.</Text>
             </View>
-          ))}
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -326,6 +361,33 @@ const styles = StyleSheet.create({
     color: colors.mutedSoft,
     fontSize: 11,
     fontWeight: '900',
+  },
+  periodSelector: {
+    backgroundColor: colors.bgSoft,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 12,
+    padding: 3,
+  },
+  periodOption: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 32,
+  },
+  periodOptionActive: {
+    backgroundColor: colors.accent,
+    borderRadius: 6,
+  },
+  periodOptionText: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  periodOptionTextActive: {
+    color: colors.bg,
   },
   trendCard: {
     backgroundColor: colors.surface,
@@ -524,6 +586,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     ...shadows.card,
+  },
+  emptyChanges: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    minHeight: 74,
+    paddingHorizontal: 14,
+  },
+  emptyChangesText: {
+    color: colors.mutedSoft,
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 9,
   },
   changeRow: {
     alignItems: 'center',

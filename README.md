@@ -58,7 +58,7 @@ EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, Piyasa Sinyali için `backend/supabase_market_signals.sql` dosyası Supabase SQL Editor'da çalıştırılmalıdır. Bildirim audit alanları güncellendiği için mevcut kurulumlarda `backend/supabase_notifications.sql` tekrar çalıştırılabilir. Haber destekli analiz alanları için mevcut kurulumlarda `backend/supabase_market_signals.sql` tekrar çalıştırılabilir. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
+Bildirimlerin canlı çalışması için `backend/supabase_notifications.sql`, Piyasa Sinyali için `backend/supabase_market_signals.sql` ve gerçekleşen zam/indirim olayları için `backend/supabase_price_change_events.sql` dosyası Supabase SQL Editor'da çalıştırılmalıdır. Bildirim audit alanları güncellendiği için mevcut kurulumlarda `backend/supabase_notifications.sql` tekrar çalıştırılabilir. Haber destekli analiz alanları için mevcut kurulumlarda `backend/supabase_market_signals.sql` tekrar çalıştırılabilir. GitHub Actions backend akışı için `SUPABASE_URL`, `SUPABASE_KEY` ve güvenli token okuma amacıyla `SUPABASE_SERVICE_ROLE_KEY` secret olarak eklenmelidir.
 
 Opsiyonel ücretsiz AI analizi için GitHub Actions secrets tarafına `GEMINI_API_KEY` eklenebilir. `GEMINI_MODEL` verilmezse backend `gemini-2.5-flash` modelini kullanır; anahtar yoksa sistem kural tabanlı analizle çalışmaya devam eder.
 
@@ -68,7 +68,7 @@ Piyasa sinyali sosyal medya kaynaklarını filtreler, yalnızca son 24 saatteki 
 
 - Ana Sayfa: güncel ortalama fiyatlar, haber destekli piyasa sinyali, son yenileme zamanı ve 7 günlük trend
 - İller: 81 il listesi, yakıt türü seçimi, il arama ve yenileme
-- Geçmiş: 30 günlük trend, özet metrikler ve son değişiklikler
+- Geçmiş: 7/30/90 gün veya tüm kayıtlar için trend, özet metrikler ve gerçekleşen son değişiklikler
 - Bildirimler: fiyat uyarıları, sessiz saatler ve takip edilen şehir/yakıt ayarları
 
 ## Yol Haritası

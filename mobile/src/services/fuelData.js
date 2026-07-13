@@ -729,6 +729,20 @@ function normalizeHistoryRecord(record) {
   }
 }
 
+function normalizePriceChangeEvent(record) {
+  const diff = parseFuelValue(record.diff) ?? 0
+
+  return {
+    city: record.city ?? 'Turkiye geneli',
+    diff,
+    direction: record.direction === 'decrease' || diff < 0 ? 'decrease' : 'increase',
+    eventAt: record.event_at ?? record.created_at ?? new Date().toISOString(),
+    fuel: record.fuel ?? 'Yakit',
+    newPrice: parseFuelValue(record.new_price),
+    oldPrice: parseFuelValue(record.old_price),
+  }
+}
+
 function normalizeMarketSignalRecord(record) {
   if (!record) {
     return fallbackMarketSignal
@@ -913,28 +927,39 @@ function buildHomeTrendSeries(history) {
 }
 
 function buildHistoryTrendSeries(history) {
-  const recent = history.slice(-7)
-
   return [
     {
       key: 'Benzin',
       color: colors.accent,
-      values: recent.map((item) => item.benzin95),
+      values: history.map((item) => item.benzin95),
       strokeWidth: 4,
     },
     {
       key: 'Motorin',
       color: colors.info,
-      values: recent.map((item) => item.motorin),
+      values: history.map((item) => item.motorin),
       strokeWidth: 3,
     },
     {
       key: 'LPG',
       color: colors.warning,
-      values: recent.map((item) => item.lpg),
+      values: history.map((item) => item.lpg),
       strokeWidth: 3,
     },
   ]
+}
+
+function sampleHistoryRecords(history, maxPoints = 12) {
+  if (history.length <= maxPoints) {
+    return history
+  }
+
+  const lastIndex = history.length - 1
+  const indexes = new Set(
+    Array.from({ length: maxPoints }, (_, index) => Math.round((index * lastIndex) / (maxPoints - 1))),
+  )
+
+  return [...indexes].sort((first, second) => first - second).map((index) => history[index])
 }
 
 function buildHistoryDomain(history) {
@@ -949,18 +974,26 @@ function buildHistoryDomain(history) {
 }
 
 function buildHistoryLabels(history) {
-  const recent = history.slice(-7)
-
-  if (recent.length < 3) {
+  if (history.length < 3) {
     return ['13 Şub', '28 Şub', '15 Mar']
   }
 
-  return [recent[0], recent[Math.floor(recent.length / 2)], recent[recent.length - 1]].map((item) =>
+  return [history[0], history[Math.floor(history.length / 2)], history[history.length - 1]].map((item) =>
     formatShortDate(item.date),
   )
 }
 
-function buildRecentChanges(history) {
+function buildRecentChanges(history, priceChangeEvents = []) {
+  if (priceChangeEvents.length) {
+    return priceChangeEvents.slice(0, 10).map((event) => ({
+      date: `${formatShortDate(event.eventAt)} ${formatSignalTime(event.eventAt)}`,
+      tag: event.fuel,
+      value: `${event.diff >= 0 ? '+' : ''}${event.diff.toFixed(2)} TL`,
+      desc: `${event.city}: ${formatCurrency(event.oldPrice)} -> ${formatCurrency(event.newPrice)}`,
+      tone: event.direction === 'increase' ? 'up' : 'down',
+    }))
+  }
+
   const latest = [...history].reverse().slice(0, 3)
 
   return latest.map((item) => {
@@ -988,12 +1021,48 @@ function buildRecentChanges(history) {
   })
 }
 
+function buildHistoryMetrics(history) {
+  const latest = history[history.length - 1]
+  const lowestBenzin = history.reduce(
+    (selected, item) => (item.benzin95 < selected.benzin95 ? item : selected),
+    latest,
+  )
+
+  return [
+    {
+      label: 'En Dusuk Benzin',
+      value: formatCurrency(lowestBenzin.benzin95),
+      icon: 'calendar-month',
+      tone: 'accent',
+    },
+    {
+      label: 'Son Benzin',
+      value: formatCurrency(latest.benzin95),
+      icon: 'gas-station',
+      tone: 'info',
+    },
+  ]
+}
+
+export function buildHistoryView(history, periodDays) {
+  const selectedHistory = periodDays === 'all' ? history : history.slice(-periodDays)
+  const chartHistory = sampleHistoryRecords(selectedHistory)
+
+  return {
+    chartDomain: buildHistoryDomain(selectedHistory),
+    chartLabels: buildHistoryLabels(chartHistory),
+    metrics: buildHistoryMetrics(selectedHistory),
+    trendSeries: buildHistoryTrendSeries(chartHistory),
+  }
+}
+
 function buildFuelData({
   prices,
   history,
   source,
   error,
   marketSignal = fallbackMarketSignal,
+  priceChangeEvents = [],
   refreshRequest = null,
   syncedAt = new Date(),
 }) {
@@ -1007,22 +1076,14 @@ function buildFuelData({
     history,
     historyChartDomain: buildHistoryDomain(history),
     historyChartLabels: buildHistoryLabels(history),
-    historyMetrics: [
-      { label: 'En Ucuz Gün', value: '12 Mart', icon: 'calendar-month', tone: 'accent' },
-      {
-        label: 'Ortalama Benzin',
-        value: formatCurrency(average(prices.map((item) => item.benzin95))),
-        icon: 'gas-station',
-        tone: 'info',
-      },
-    ],
+    historyMetrics: buildHistoryMetrics(history),
     historyTrendSeries: buildHistoryTrendSeries(history),
     homeFuels: buildHomeFuels(prices, history),
     homeTrendSeries: buildHomeTrendSeries(history),
     lastUpdatedLabel: formatSyncTime(syncedAt),
     marketSignal,
     prices,
-    recentChanges: buildRecentChanges(history),
+    recentChanges: buildRecentChanges(history, priceChangeEvents),
     refreshRequest,
     source,
   }
@@ -1069,13 +1130,13 @@ async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
   }
 
   const refreshRequest = triggerBackend ? await triggerBackendRefresh() : null
-  const [pricesResult, historyResult, marketSignalResult] = await Promise.all([
+  const [pricesResult, historyResult, marketSignalResult, priceChangeEventsResult] = await Promise.all([
     supabase.from('fiyatlar').select('il, benzin_95, motorin, lpg, guncelleme'),
     supabase
       .from('gecmis')
       .select('tarih, benzin_95, motorin, lpg, benzin_degisim, motorin_degisim, lpg_degisim')
       .order('tarih', { ascending: true })
-      .limit(30),
+      .limit(365),
     supabase
       .from('market_signals')
       .select(
@@ -1083,6 +1144,11 @@ async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
       )
       .order('calculated_at', { ascending: false })
       .limit(1),
+    supabase
+      .from('price_change_events')
+      .select('city, fuel, old_price, new_price, diff, direction, event_at, created_at')
+      .order('event_at', { ascending: false })
+      .limit(100),
   ])
 
   if (pricesResult.error) {
@@ -1091,6 +1157,9 @@ async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
 
   const remotePrices = pricesResult.data?.map(normalizePriceRecord) ?? []
   const remoteHistory = historyResult.error ? [] : historyResult.data?.map(normalizeHistoryRecord) ?? []
+  const priceChangeEvents = priceChangeEventsResult.error
+    ? []
+    : priceChangeEventsResult.data?.map(normalizePriceChangeEvent) ?? []
 
   if (!remotePrices.length) {
     return null
@@ -1102,6 +1171,7 @@ async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
       marketSignalResult.error || !marketSignalResult.data?.[0]
         ? fallbackMarketSignal
         : normalizeMarketSignalRecord(marketSignalResult.data[0]),
+    priceChangeEvents,
     prices: mergePricesWithFallback(remotePrices),
     refreshRequest,
     source: 'supabase',
