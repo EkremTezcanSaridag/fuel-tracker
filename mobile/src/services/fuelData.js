@@ -150,13 +150,13 @@ const fallbackMarketSignal = {
   ],
   icon: signalToneConfig.neutral.icon,
   metrics: [
-    { label: 'Brent', value: '--' },
-    { label: 'USD/TL', value: '--' },
-    { label: '7 gün', value: '--' },
+    { label: 'Haber', value: '--' },
+    { label: 'Skor', value: '--' },
+    { label: 'Pencere', value: '24s' },
   ],
   analysisFactors: [
     {
-      detail: 'Canlı veri geldiğinde analiz faktörleri burada görünecek.',
+      detail: 'Son 24 saatin haberleri geldiğinde analiz burada görünecek.',
       label: 'Analiz',
       tone: 'neutral',
       value: '--',
@@ -165,7 +165,7 @@ const fallbackMarketSignal = {
   newsItems: [],
   score: 0,
   softColor: signalToneConfig.neutral.softColor,
-  summary: 'Brent petrol ve USD/TL verisiyle piyasa sinyali hesaplanacak.',
+  summary: 'Piyasa sinyali son 24 saatin güncel haberleriyle hesaplanacak.',
   title: signalToneConfig.neutral.title,
   updatedAt: '--',
 }
@@ -741,6 +741,7 @@ function normalizeMarketSignalRecord(record) {
   const analysis = parseJsonObject(record.analysis)
   const rawFactors = parseJsonList(analysis.factors)
   const rawNewsItems = parseJsonList(record.news_items)
+  const lookbackHours = Number(analysis.lookback_hours) || 24
   const fuels = rawFuelSignals.length
     ? rawFuelSignals.map((signal) => {
         const fuelDirection = normalizeSignalDirection(signal.direction)
@@ -782,9 +783,9 @@ function normalizeMarketSignalRecord(record) {
     fuels,
     icon: tone.icon,
     metrics: [
-      { label: 'Brent', value: formatUsd(parseFuelValue(record.brent_usd)) },
-      { label: 'USD/TL', value: formatRate(parseFuelValue(record.usd_try)) },
-      { label: '7 gün', value: formatPercentValue(parseFuelValue(record.index_change_7d)) },
+      { label: 'Haber', value: `${rawNewsItems.length} başlık` },
+      { label: 'Skor', value: String(Number(record.score) || 0) },
+      { label: 'Pencere', value: `${lookbackHours}s` },
     ],
     newsItems,
     score: Number(record.score) || 0,
@@ -1068,7 +1069,7 @@ async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
   }
 
   const refreshRequest = triggerBackend ? await triggerBackendRefresh() : null
-  const [pricesResult, historyResult, marketSignalResult, liveMarketSignal] = await Promise.all([
+  const [pricesResult, historyResult, marketSignalResult] = await Promise.all([
     supabase.from('fiyatlar').select('il, benzin_95, motorin, lpg, guncelleme'),
     supabase
       .from('gecmis')
@@ -1082,7 +1083,6 @@ async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
       )
       .order('calculated_at', { ascending: false })
       .limit(1),
-    fetchLiveMarketSignal().catch(() => null),
   ])
 
   if (pricesResult.error) {
@@ -1100,7 +1100,7 @@ async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
     history: remoteHistory.length >= 2 ? remoteHistory : fallbackHistory,
     marketSignal:
       marketSignalResult.error || !marketSignalResult.data?.[0]
-        ? liveMarketSignal ?? fallbackMarketSignal
+        ? fallbackMarketSignal
         : normalizeMarketSignalRecord(marketSignalResult.data[0]),
     prices: mergePricesWithFallback(remotePrices),
     refreshRequest,

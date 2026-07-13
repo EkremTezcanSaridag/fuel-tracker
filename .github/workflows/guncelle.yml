@@ -2,7 +2,7 @@ name: Günlük Fiyat Güncelleme
 
 on:
   schedule:
-    - cron: '0 5,8,11,14,17,20 * * *'  # Turkiye saatiyle 08:00-23:00 arasi 3 saatte bir
+    - cron: '0 * * * *'  # Her saat basi (UTC, GitHub Actions scheduler)
   workflow_dispatch:       # Elle de çalıştırılabilir
 
 jobs:
@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Kodu çek
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Python kur
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 

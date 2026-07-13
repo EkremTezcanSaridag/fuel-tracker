@@ -594,6 +594,18 @@ def resolve_combined_confidence(combined_pressure, market_pressure, news_pressur
     return "low"
 
 
+def resolve_news_confidence(news_score):
+    pressure = abs(news_score)
+
+    if pressure >= 60:
+        return "high"
+
+    if pressure >= 30:
+        return "medium"
+
+    return "low"
+
+
 def direction_label(direction):
     if direction == "increase":
         return "artis baskisi"
@@ -629,55 +641,33 @@ def build_fuel_signals(direction, confidence, score):
     return signals
 
 
-def build_analysis_factors(
-    direction,
-    confidence,
-    market_score,
-    news_analysis,
-    price_analysis,
-    index_change_3d,
-    index_change_7d,
-    brent_change_3d,
-    usd_change_3d,
-):
+def build_analysis_factors(direction, confidence, news_analysis, news_items, calculated_at):
+    latest_news_time = news_items[0].get("published_at") if news_items else None
+
     return [
         {
-            "label": "Brent TL endeksi",
-            "value": format_percent(index_change_3d),
-            "tone": "increase" if index_change_3d >= 2.5 else "decrease" if index_change_3d <= -2.5 else "neutral",
-            "detail": f"7 gunluk hareket {format_percent(index_change_7d)}.",
-        },
-        {
-            "label": "Brent petrol",
-            "value": format_percent(brent_change_3d),
-            "tone": "increase" if brent_change_3d >= 1 else "decrease" if brent_change_3d <= -1 else "neutral",
-            "detail": "Ham petrol maliyet baskisini temsil eder.",
-        },
-        {
-            "label": "USD/TL",
-            "value": format_percent(usd_change_3d),
-            "tone": "increase" if usd_change_3d >= 0.75 else "decrease" if usd_change_3d <= -0.75 else "neutral",
-            "detail": "Kur hareketi pompa fiyatlarina geciskenligi etkiler.",
-        },
-        {
-            "label": "Pompa degisimi",
-            "value": f"{price_analysis['score']:+d}",
-            "tone": price_analysis["direction"],
-            "detail": price_analysis["summary"],
-        },
-        {
-            "label": "Haber etkisi",
+            "label": "Guncel haber etkisi",
             "value": f"{news_analysis['score']:+d}",
             "tone": news_analysis["direction"],
             "detail": news_analysis["summary"],
         },
         {
-            "label": "Genel beklenti",
+            "label": "Haber guncelligi",
+            "value": f"{len(news_items)} baslik",
+            "tone": "neutral",
+            "detail": (
+                f"En yeni baslik: {latest_news_time}."
+                if latest_news_time
+                else f"Son {NEWS_MAX_AGE_HOURS} saatte uygun haber bulunamadi."
+            ),
+        },
+        {
+            "label": "Analiz kapsami",
             "value": direction_label(direction),
             "tone": direction,
             "detail": (
-                f"Guven seviyesi: {confidence}; piyasa skoru {market_score}, "
-                f"haber skoru {news_analysis['score']}, pompa skoru {price_analysis['score']}."
+                f"{calculated_at.strftime('%d.%m.%Y %H:%M')} itibariyla sadece son "
+                f"{NEWS_MAX_AGE_HOURS} saatteki haberler kullanildi. Guven: {confidence}."
             ),
         },
     ]
@@ -712,7 +702,7 @@ def build_summary(direction, confidence, index_change_3d, index_change_7d, brent
     )
 
 
-def build_rule_based_ai_summary(direction, confidence, market_summary, news_analysis, price_analysis):
+def build_rule_based_ai_summary(direction, confidence, news_analysis, news_items):
     if direction == "increase":
         action = "zam riskini"
     elif direction == "decrease":
@@ -721,9 +711,9 @@ def build_rule_based_ai_summary(direction, confidence, market_summary, news_anal
         action = "net bir fiyat yonu olusmadigini"
 
     return (
-        f"Analiz {action} isaret ediyor. {market_summary} "
-        f"Pompa verisi: {price_analysis['summary']} "
-        f"Haber tarafinda: {news_analysis['summary']} "
+        f"Son {NEWS_MAX_AGE_HOURS} saatteki {len(news_items)} guncel haber basligina gore analiz "
+        f"{action} isaret ediyor. Haber tarafinda: {news_analysis['summary']} "
+        f"Guven seviyesi {confidence}. "
         f"Bu yorum tahmin niteligindedir; resmi fiyat degisikligi duyurusu degildir."
     )
 
@@ -773,6 +763,8 @@ def call_gemini_analysis(payload):
                             {
                                 "text": (
                                     "Turkiye akaryakit piyasasi icin kisa, temkinli ve kanita dayali analiz yaz. "
+                                    "Yalnizca verilen son 24 saatlik haber basliklarini kullan; Brent, kur veya "
+                                    "pompa fiyat degisimi uzerinden ek cikarim yapma. "
                                     "Kesin zam/indirim vaadi verme; bunu bir beklenti sinyali olarak anlat. "
                                     "Sadece JSON uret. Veri:\n"
                                     f"{json.dumps(payload, ensure_ascii=False)}"
@@ -808,77 +800,35 @@ def call_gemini_analysis(payload):
 
 
 def build_market_signal(price_changes=None, previous_price_memory=None):
-    brent_history = fetch_brent_history()
-    usd_history = fetch_usd_try_history()
     news_items = fetch_news_items()
     price_analysis = merge_price_memory(summarize_price_changes(price_changes or []), previous_price_memory)
-
-    latest_brent = brent_history[-1]
-    latest_usd = usd_history[-1]
-    current_index = latest_brent["price"] * latest_usd["rate"]
-    index_3d = multiply_values(safe_history_value(brent_history, 3, "price"), safe_history_value(usd_history, 3, "rate"))
-    index_7d = multiply_values(safe_history_value(brent_history, 7, "price"), safe_history_value(usd_history, 7, "rate"))
-    brent_change_3d = percent_change(latest_brent["price"], safe_history_value(brent_history, 3, "price"))
-    usd_change_3d = percent_change(latest_usd["rate"], safe_history_value(usd_history, 3, "rate"))
-    index_change_3d = percent_change(current_index, index_3d)
-    index_change_7d = percent_change(current_index, index_7d)
-    market_direction = resolve_direction(index_change_3d, index_change_7d)
-    market_confidence = resolve_confidence(index_change_3d, index_change_7d)
-    market_score = min(100, round(max(abs(index_change_3d), abs(index_change_7d)) * 12))
-    signed_market_score = market_score if market_direction == "increase" else -market_score if market_direction == "decrease" else 0
     news_analysis = score_news_items(news_items)
-    direction = resolve_combined_direction(signed_market_score, news_analysis["score"], price_analysis["score"])
-    combined_pressure = abs(signed_market_score + news_analysis["score"] + price_analysis["score"])
-    confidence = resolve_combined_confidence(
-        combined_pressure,
-        market_score,
-        abs(news_analysis["score"]),
-        abs(price_analysis["score"]),
-    )
-    score_floor = abs(price_analysis["score"]) if price_analysis["direction"] == direction else 0
-    score = clamp(round(max(combined_pressure, score_floor)), 0, 100)
     calculated_at = datetime.now(ISTANBUL_TZ)
-    market_summary = build_summary(
-        market_direction,
-        market_confidence,
-        index_change_3d,
-        index_change_7d,
-        brent_change_3d,
-        usd_change_3d,
-    )
+    direction = news_analysis["direction"]
+    confidence = resolve_news_confidence(news_analysis["score"])
+    score = abs(news_analysis["score"])
     analysis_factors = build_analysis_factors(
         direction,
         confidence,
-        market_score,
         news_analysis,
-        price_analysis,
-        index_change_3d,
-        index_change_7d,
-        brent_change_3d,
-        usd_change_3d,
+        news_items,
+        calculated_at,
     )
     ai_payload = {
-        "market_direction": market_direction,
-        "combined_direction": direction,
+        "analysis_basis": "news_only",
+        "news_lookback_hours": NEWS_MAX_AGE_HOURS,
+        "calculated_at": calculated_at.isoformat(),
+        "direction": direction,
         "confidence": confidence,
         "score": score,
-        "metrics": {
-            "brent_usd": round(latest_brent["price"], 2),
-            "usd_try": round(latest_usd["rate"], 4),
-            "brent_change_3d": brent_change_3d,
-            "usd_change_3d": usd_change_3d,
-            "index_change_3d": index_change_3d,
-            "index_change_7d": index_change_7d,
-        },
         "news": news_items[:5],
         "news_analysis": news_analysis,
-        "price_analysis": price_analysis,
     }
     ai_result = call_gemini_analysis(ai_payload)
     ai_summary = (
         ai_result["summary"]
         if ai_result
-        else build_rule_based_ai_summary(direction, confidence, market_summary, news_analysis, price_analysis)
+        else build_rule_based_ai_summary(direction, confidence, news_analysis, news_items)
     )
 
     return {
@@ -887,19 +837,18 @@ def build_market_signal(price_changes=None, previous_price_memory=None):
         "confidence": confidence,
         "score": score,
         "summary": ai_summary,
-        "brent_usd": round(latest_brent["price"], 2),
-        "usd_try": round(latest_usd["rate"], 4),
-        "brent_try_index": round(current_index, 2),
-        "brent_change_3d": brent_change_3d,
-        "usd_change_3d": usd_change_3d,
-        "index_change_3d": index_change_3d,
-        "index_change_7d": index_change_7d,
+        "brent_usd": None,
+        "usd_try": None,
+        "brent_try_index": None,
+        "brent_change_3d": None,
+        "usd_change_3d": None,
+        "index_change_3d": None,
+        "index_change_7d": None,
         "signals": build_fuel_signals(direction, confidence, score),
         "analysis": {
             "mode": "gemini" if ai_result else "rules",
-            "market_direction": market_direction,
-            "market_confidence": market_confidence,
-            "market_score": market_score,
+            "analysis_basis": "news_only",
+            "lookback_hours": NEWS_MAX_AGE_HOURS,
             "news_score": news_analysis["score"],
             "news_direction": news_analysis["direction"],
             "news_summary": news_analysis["summary"],
@@ -916,10 +865,8 @@ def build_market_signal(price_changes=None, previous_price_memory=None):
         },
         "news_items": news_items,
         "sources": {
-            "brent": latest_brent["source"],
-            "brent_url": latest_brent["source_url"],
-            "usd_try": latest_usd["source"],
-            "usd_try_url": latest_usd["source_url"],
+            "news_feeds": [feed["name"] for feed in NEWS_FEEDS],
+            "news_lookback_hours": NEWS_MAX_AGE_HOURS,
         },
         "calculated_at": calculated_at.isoformat(),
     }

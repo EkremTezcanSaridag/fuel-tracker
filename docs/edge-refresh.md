@@ -28,7 +28,7 @@ supabase secrets set GITHUB_ACTION_TOKEN=... GITHUB_OWNER=EkremTezcanSaridag GIT
 1. Kullanici uygulamada yenilemeye basar.
 2. Mobil app `supabase.functions.invoke('refresh-prices')` cagirir.
 3. Edge Function GitHub `workflow_dispatch` istegi atar.
-4. GitHub Action fiyatlari, haberleri, AI analizini ve bildirimleri yeniden calistirir.
+4. GitHub Action fiyatlari, son 24 saatin haberlerini, haber-merkezli analizi ve bildirimleri yeniden calistirir.
 5. Action bitince yeni veriler Supabase tablolarina yazilir.
 
 Not: Workflow asenkron calisir. Uygulama ilk anda "Backend guncelleme siraya alindi" mesajini gosterir; fiyatlar Action tamamlaninca sonraki okumada yenilenir.
