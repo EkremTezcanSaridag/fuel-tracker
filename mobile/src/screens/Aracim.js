@@ -144,8 +144,8 @@ export default function Aracim() {
           </View>
         </View>
         <Pressable onPress={handleSave} style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}>
-          <MaterialCommunityIcons name={saved ? 'check' : 'content-save-outline'} size={18} color={colors.bg} />
-          <Text style={styles.saveButtonText}>{saved ? 'Kaydedildi' : 'Bilgileri kaydet'}</Text>
+          <MaterialCommunityIcons name={saved ? 'check' : 'calculator-variant-outline'} size={18} color={colors.bg} />
+          <Text style={styles.saveButtonText}>{saved ? 'Hesaplandı' : 'Hesapla'}</Text>
         </Pressable>
 
         <Text style={styles.sectionTitle}>Maliyet özeti</Text>
