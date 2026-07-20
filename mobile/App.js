@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import AnaSayfa from './src/screens/AnaSayfa'
 import Iller from './src/screens/Iller'
 import Gecmis from './src/screens/Gecmis'
+import Aracim from './src/screens/Aracim'
 import Bildirimler from './src/screens/Bildirimler'
 import {
   defaultNotificationSettings,
@@ -26,6 +27,7 @@ const tabs = {
   home: 'Ana Sayfa',
   cities: 'İller',
   history: 'Geçmiş',
+  vehicle: 'Aracım',
   alerts: 'Bildirimler',
 }
 
@@ -33,6 +35,7 @@ const tabIcons = {
   [tabs.home]: 'home',
   [tabs.cities]: 'map-marker',
   [tabs.history]: 'history',
+  [tabs.vehicle]: 'car-outline',
   [tabs.alerts]: 'bell-outline',
 }
 
@@ -62,7 +65,7 @@ export default function App() {
               <MaterialCommunityIcons name={tabIcons[route.name]} color={color} size={size ?? 22} />
             ),
             tabBarLabelStyle: {
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: '700',
               marginBottom: 2,
             },
@@ -88,6 +91,7 @@ export default function App() {
           <Tab.Screen name={tabs.home} component={AnaSayfa} />
           <Tab.Screen name={tabs.cities} component={Iller} />
           <Tab.Screen name={tabs.history} component={Gecmis} />
+          <Tab.Screen name={tabs.vehicle} component={Aracim} />
           <Tab.Screen name={tabs.alerts} component={Bildirimler} />
         </Tab.Navigator>
       </NavigationContainer>
