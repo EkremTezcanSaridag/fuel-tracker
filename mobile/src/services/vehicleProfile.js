@@ -5,9 +5,8 @@ const storageKey = '@yakit-radar/vehicle-profile'
 export const defaultVehicleProfile = {
   city: 'İstanbul',
   fuelKey: 'benzin95',
-  consumption: '7.5',
-  tankCapacity: '50',
-  monthlyKm: '1000',
+  spentAmount: '500',
+  distanceKm: '300',
 }
 
 export async function loadVehicleProfile() {

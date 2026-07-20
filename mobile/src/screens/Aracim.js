@@ -53,18 +53,18 @@ export default function Aracim() {
   const selectedFuel = fuelTabs.find((fuel) => fuel.key === profile.fuelKey) ?? fuelTabs[0]
   const selectedCity = data.prices.find((item) => item.city === profile.city) ?? data.prices[0]
   const price = Number(selectedCity?.[profile.fuelKey]) || 0
-  const consumption = toNumber(profile.consumption)
-  const tankCapacity = toNumber(profile.tankCapacity)
-  const monthlyKm = toNumber(profile.monthlyKm)
+  const spentAmount = toNumber(profile.spentAmount)
+  const distanceKm = toNumber(profile.distanceKm)
   const calculations = useMemo(() => {
-    const costPer100Km = consumption * price
+    const costPerKm = distanceKm > 0 ? spentAmount / distanceKm : 0
+    const purchasedLiters = price > 0 ? spentAmount / price : 0
     return {
-      costPer100Km,
-      fullTankCost: tankCapacity * price,
-      monthlyCost: (monthlyKm / 100) * costPer100Km,
-      range: consumption > 0 ? (tankCapacity / consumption) * 100 : 0,
+      costPerKm,
+      costPer100Km: costPerKm * 100,
+      purchasedLiters,
+      estimatedConsumption: distanceKm > 0 ? (purchasedLiters / distanceKm) * 100 : 0,
     }
-  }, [consumption, monthlyKm, price, tankCapacity])
+  }, [distanceKm, price, spentAmount])
   const filteredCities = useMemo(() => {
     const query = cityQuery.trim().toLocaleLowerCase('tr-TR')
     return query ? data.prices.filter((item) => item.city.toLocaleLowerCase('tr-TR').includes(query)) : data.prices
@@ -110,7 +110,7 @@ export default function Aracim() {
           <Text style={styles.liveLabel}>{refreshing ? 'YENİLENİYOR' : 'CANLI'}</Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Araç bilgileri</Text>
+        <Text style={styles.sectionTitle}>Sürüş hesabı</Text>
         <View style={styles.formCard}>
           <Text style={styles.fieldLabel}>Yakıt türü</Text>
           <View style={styles.fuelSelector}>
@@ -132,26 +132,15 @@ export default function Aracim() {
             </View>
             <MaterialCommunityIcons name="chevron-right" size={21} color={colors.muted} />
           </Pressable>
-          <View style={styles.inputRow}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.fieldLabel}>Tüketim</Text>
-              <View style={styles.inputShell}>
-                <TextInput value={profile.consumption} onChangeText={(value) => updateProfile('consumption', value)} keyboardType="decimal-pad" placeholder="7.5" placeholderTextColor={colors.muted} style={styles.input} />
-                <Text style={styles.unit}>L / 100 km</Text>
-              </View>
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.fieldLabel}>Depo kapasitesi</Text>
-              <View style={styles.inputShell}>
-                <TextInput value={profile.tankCapacity} onChangeText={(value) => updateProfile('tankCapacity', value)} keyboardType="decimal-pad" placeholder="50" placeholderTextColor={colors.muted} style={styles.input} />
-                <Text style={styles.unit}>Litre</Text>
-              </View>
-            </View>
-          </View>
-          <Text style={styles.fieldLabel}>Aylık mesafe</Text>
+          <Text style={styles.fieldLabel}>Harcanan tutar</Text>
           <View style={styles.inputShell}>
-            <TextInput value={profile.monthlyKm} onChangeText={(value) => updateProfile('monthlyKm', value)} keyboardType="numeric" placeholder="1000" placeholderTextColor={colors.muted} style={styles.input} />
-            <Text style={styles.unit}>km / ay</Text>
+            <TextInput value={profile.spentAmount} onChangeText={(value) => updateProfile('spentAmount', value)} keyboardType="decimal-pad" placeholder="500" placeholderTextColor={colors.muted} style={styles.input} />
+            <Text style={styles.unit}>TL</Text>
+          </View>
+          <Text style={styles.fieldLabel}>Gidilen mesafe</Text>
+          <View style={styles.inputShell}>
+            <TextInput value={profile.distanceKm} onChangeText={(value) => updateProfile('distanceKm', value)} keyboardType="decimal-pad" placeholder="300" placeholderTextColor={colors.muted} style={styles.input} />
+            <Text style={styles.unit}>km</Text>
           </View>
         </View>
         <Pressable onPress={handleSave} style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}>
@@ -162,10 +151,10 @@ export default function Aracim() {
         <Text style={styles.sectionTitle}>Maliyet özeti</Text>
         {loadingProfile ? <View style={styles.loadingBox}><ActivityIndicator color={colors.accent} /></View> : (
           <View style={styles.metricsGrid}>
-            <Metric icon="road-variant" label="100 km maliyeti" value={formatCurrency(calculations.costPer100Km)} />
-            <Metric icon="gas-station" label="Tam depo" value={formatCurrency(calculations.fullTankCost)} />
-            <Metric icon="calendar-month-outline" label="Aylık tahmin" value={formatCurrency(calculations.monthlyCost)} />
-            <Metric icon="map-marker-distance" label="Tahmini menzil" value={`${formatNumber(calculations.range)} km`} />
+            <Metric icon="road-variant" label="Km başına maliyet" value={formatCurrency(calculations.costPerKm)} />
+            <Metric icon="speedometer" label="100 km maliyeti" value={formatCurrency(calculations.costPer100Km)} />
+            <Metric icon="gas-station" label="Alınan yakıt" value={`${formatNumber(calculations.purchasedLiters)} L`} />
+            <Metric icon="chart-line" label="Hesaplanan tüketim" value={`${formatNumber(calculations.estimatedConsumption)} L / 100 km`} />
           </View>
         )}
       </ScrollView>
