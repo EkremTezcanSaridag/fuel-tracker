@@ -141,6 +141,35 @@ def lpg_fiyatlarini_cek():
     return lpg_verileri
 
 
+def istanbul_bolgelerini_birlestir(il_verileri):
+    istanbul_bolgeleri = [il for il in il_verileri if il.startswith("İstanbul /")]
+
+    if not istanbul_bolgeleri:
+        return il_verileri
+
+    if len(istanbul_bolgeleri) != 2:
+        raise RuntimeError(f"Istanbul icin beklenmeyen bolge kaydi: {istanbul_bolgeleri}")
+
+    birlesik_kayit = {
+        "il": "İstanbul",
+        "guncelleme": il_verileri[istanbul_bolgeleri[0]]["guncelleme"],
+    }
+
+    for alan in FUEL_FIELDS:
+        degerler = [fiyat_parse(il_verileri[bolge].get(alan)) for bolge in istanbul_bolgeleri]
+
+        if any(deger is None for deger in degerler):
+            raise RuntimeError(f"Istanbul {alan} fiyati okunamadi")
+
+        birlesik_kayit[alan] = f"{sum(degerler) / len(degerler):.2f}".replace(".", ",")
+
+    for bolge in istanbul_bolgeleri:
+        del il_verileri[bolge]
+
+    il_verileri["İstanbul"] = birlesik_kayit
+    return il_verileri
+
+
 def tum_fiyatlari_cek():
     il_verileri = akaryakit_fiyatlarini_cek()
     lpg_verileri = lpg_fiyatlarini_cek()
@@ -162,7 +191,7 @@ def tum_fiyatlari_cek():
     if eksik_lpg:
         raise RuntimeError(f"LPG fiyati eslesmeyen iller: {', '.join(eksik_lpg)}")
 
-    return il_verileri
+    return istanbul_bolgelerini_birlestir(il_verileri)
 
 
 def mevcut_fiyatlari_oku():
@@ -265,6 +294,8 @@ def fiyat_degisim_gecmisi_kaydet(degisimler):
 def supabase_yaz(veri):
     for kayit in veri.values():
         supabase.table("fiyatlar").upsert(kayit).execute()
+
+    supabase.table("fiyatlar").delete().in_("il", ["İstanbul / Anadolu", "İstanbul / Avrupa"]).execute()
 
     print(f"Supabase'e {len(veri)} il yazildi")
 
