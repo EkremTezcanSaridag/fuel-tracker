@@ -138,8 +138,8 @@ export async function syncPushRegistration(expoPushToken, settings = defaultNoti
     const installationId = await getInstallationId()
     const now = new Date().toISOString()
 
-    const { error } = await supabase.from('push_tokens').upsert(
-      {
+    const { error } = await supabase.rpc('register_push_token', {
+      payload: {
         app_version: Constants.expoConfig?.version ?? null,
         city_alerts: Boolean(settings.cityAlerts),
         daily_alerts: Boolean(settings.dailyAlerts),
@@ -154,10 +154,7 @@ export async function syncPushRegistration(expoPushToken, settings = defaultNoti
         updated_at: now,
         weekly_summary: Boolean(settings.weeklySummary),
       },
-      {
-        onConflict: 'installation_id',
-      },
-    )
+    })
 
     if (error) {
       throw error
