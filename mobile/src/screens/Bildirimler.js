@@ -321,13 +321,6 @@ export default function Bildirimler() {
           </View>
         </View>
 
-        <View style={styles.infoCard}>
-          <MaterialCommunityIcons name="information-outline" size={18} color={colors.accent} />
-          <Text style={styles.infoText}>
-            {permission.tokenError ??
-              'Bildirim izni aktifse cihaz tokeni otomatik kaydedilir. Fiyat değişimlerinde backend bu cihaza uyarı gönderebilir.'}
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   )
