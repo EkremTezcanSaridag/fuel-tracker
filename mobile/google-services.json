@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "781203440009",
+    "project_id": "gen-lang-client-0072735616",
+    "storage_bucket": "gen-lang-client-0072735616.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:781203440009:android:e808b472a774f707eb6158",
+        "android_client_info": {
+          "package_name": "com.pompametre.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFAf2KjAuVPH5eR_zbqPvEtTuO9PKDPWM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
