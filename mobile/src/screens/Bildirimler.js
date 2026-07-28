@@ -17,6 +17,16 @@ import {
 const fuelChips = ['Benzin', 'Motorin', 'LPG']
 
 function getPermissionCopy(permission) {
+  if (permission.tokenError) {
+    return {
+      badge: 'Kontrol gerekli',
+      icon: 'alert-circle-outline',
+      title: 'Bildirim bağlantısı kurulamadı',
+      desc: 'Aşağıdaki ayrıntıyı kontrol edip tekrar deneyin.',
+      tone: 'blocked',
+    }
+  }
+
   if (permission.granted) {
     return {
       badge: 'Aktif',
@@ -214,11 +224,18 @@ export default function Bildirimler() {
           <View style={styles.summaryText}>
             <Text style={styles.summaryTitle}>{permissionCopy.title}</Text>
             <Text style={styles.summaryDesc}>{loading ? 'Durum kontrol ediliyor.' : permissionCopy.desc}</Text>
-            {permission.granted && (
+            {permission.granted && !permission.tokenError && (
               <Text style={styles.tokenText}>Expo token: {formatToken(permission.expoPushToken)}</Text>
             )}
           </View>
         </View>
+
+        {permission.tokenError && (
+          <View style={styles.errorCard}>
+            <MaterialCommunityIcons name="information-outline" size={18} color={colors.danger} />
+            <Text style={styles.errorText}>{permission.tokenError}</Text>
+          </View>
+        )}
 
         <View style={styles.actionRow}>
           <Pressable
@@ -471,6 +488,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     marginTop: 5,
+  },
+  errorCard: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.dangerDark,
+    borderColor: colors.danger,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 12,
+    padding: 12,
+  },
+  errorText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginLeft: 8,
   },
   actionRow: {
     flexDirection: 'row',
