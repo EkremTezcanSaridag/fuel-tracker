@@ -2,8 +2,10 @@ import csv
 import io
 import json
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from html import unescape
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from xml.etree import ElementTree
 
@@ -50,6 +52,7 @@ NEWS_FEEDS = [
     },
 ]
 NEWS_MAX_AGE_HOURS = int(os.getenv("NEWS_MAX_AGE_HOURS", "24"))
+NEWS_PRICE_PATTERN = re.compile(r"(?<!\d)(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:(?:TL|lira)\b|₺)", re.IGNORECASE)
 NEWS_BLOCKED_SOURCES = {
     "instagram.com",
     "facebook.com",
@@ -315,6 +318,40 @@ def is_recent_news_item(published_at, max_age_hours=NEWS_MAX_AGE_HOURS):
     return published_at >= cutoff
 
 
+def clean_news_text(value):
+    decoded = unescape(value or "")
+    without_tags = re.sub(r"<[^>]+>", " ", decoded)
+
+    return re.sub(r"\s+", " ", without_tags).strip()
+
+
+def extract_news_price_mentions(*values):
+    mentions = []
+    seen = set()
+
+    for value in values:
+        text = clean_news_text(value)
+
+        for match in NEWS_PRICE_PATTERN.finditer(text):
+            amount = match.group(1).replace(".", ",")
+            display = f"{amount} TL"
+            context_start = max(0, match.start() - 45)
+            context_end = min(len(text), match.end() + 55)
+            context = text[context_start:context_end].strip(" -:;,.\")
+            key = (display, context.lower())
+
+            if key in seen:
+                continue
+
+            seen.add(key)
+            mentions.append({"display": display, "context": context})
+
+            if len(mentions) >= 3:
+                return mentions
+
+    return mentions
+
+
 def fetch_news_items(limit=8):
     items = []
     seen_titles = set()
@@ -335,6 +372,7 @@ def fetch_news_items(limit=8):
 
             for node in root.findall("./channel/item"):
                 title = (node.findtext("title") or "").strip()
+                description = node.findtext("description") or ""
 
                 if not title:
                     continue
@@ -359,6 +397,7 @@ def fetch_news_items(limit=8):
                         "source": clean_source,
                         "url": (node.findtext("link") or "").strip(),
                         "published_at": published_at.isoformat() if published_at else None,
+                        "price_mentions": extract_news_price_mentions(title, description),
                     }
                 )
         except Exception as error:
@@ -641,8 +680,26 @@ def build_fuel_signals(direction, confidence, score):
     return signals
 
 
+def collect_news_price_mentions(news_items):
+    mentions = []
+    seen = set()
+
+    for item in news_items:
+        for mention in item.get("price_mentions", []):
+            display = mention.get("display")
+
+            if not display or display in seen:
+                continue
+
+            seen.add(display)
+            mentions.append(display)
+
+    return mentions[:5]
+
+
 def build_analysis_factors(direction, confidence, news_analysis, news_items, calculated_at):
     latest_news_time = news_items[0].get("published_at") if news_items else None
+    price_mentions = collect_news_price_mentions(news_items)
 
     return [
         {
@@ -659,6 +716,17 @@ def build_analysis_factors(direction, confidence, news_analysis, news_items, cal
                 f"En yeni baslik: {latest_news_time}."
                 if latest_news_time
                 else f"Son {NEWS_MAX_AGE_HOURS} saatte uygun haber bulunamadi."
+            ),
+        },
+        {
+            "label": "Haberlerdeki tutarlar",
+            "value": f"{len(price_mentions)} tutar" if price_mentions else "Bulunamadi",
+            "tone": "neutral",
+            "detail": (
+                f"Haber metinlerinde {', '.join(price_mentions)} ifadesi yer aliyor. "
+                "Bunlar haberde belirtilen tutarlardir; canli pompa fiyati degildir."
+                if price_mentions
+                else "Guncel haber metinlerinde TL cinsinden net bir tutar bulunamadi."
             ),
         },
         {
@@ -710,9 +778,17 @@ def build_rule_based_ai_summary(direction, confidence, news_analysis, news_items
     else:
         action = "net bir fiyat yonu olusmadigini"
 
+    price_mentions = collect_news_price_mentions(news_items)
+    price_note = (
+        f"Haberlerde {', '.join(price_mentions[:3])} gibi tutarlar belirtiliyor. "
+        if price_mentions
+        else ""
+    )
+
     return (
         f"Son {NEWS_MAX_AGE_HOURS} saatteki {len(news_items)} guncel haber basligina gore analiz "
         f"{action} isaret ediyor. Haber tarafinda: {news_analysis['summary']} "
+        f"{price_note}"
         f"Guven seviyesi {confidence}. "
         f"Bu yorum tahmin niteligindedir; resmi fiyat degisikligi duyurusu degildir."
     )
@@ -765,6 +841,8 @@ def call_gemini_analysis(payload):
                                     "Turkiye akaryakit piyasasi icin kisa, temkinli ve kanita dayali analiz yaz. "
                                     "Yalnizca verilen son 24 saatlik haber basliklarini kullan; Brent, kur veya "
                                     "pompa fiyat degisimi uzerinden ek cikarim yapma. "
+                                    "Haberde TL cinsinden tutar varsa bunu analizde belirt; haber tutarini canli "
+                                    "pompa fiyati gibi sunma. "
                                     "Kesin zam/indirim vaadi verme; bunu bir beklenti sinyali olarak anlat. "
                                     "Sadece JSON uret. Veri:\n"
                                     f"{json.dumps(payload, ensure_ascii=False)}"

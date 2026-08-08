@@ -82,6 +82,15 @@ Piyasa sinyali sosyal medya kaynaklarını filtreler, yalnızca son 24 saatteki 
 - Tamamlandı: son 24 saatlik haberlere dayalı zam/indirim beklentisi analiz fazı
 - Sıradaki: bildirim sonuçlarını yönetim/debug ekranında görünür kılmak
 
+### Planlanan Geliştirmeler
+
+- Yakıt alım kaydına istasyon, litre, not ve fiş tarihi eklenmesi
+- Aylık araç maliyeti karşılaştırmaları ve sürüş metrikleri
+- Yakıt türüne ve fiyat eşiğine göre kişisel bildirim kuralları
+- Favori şehirlerle hızlı fiyat karşılaştırması
+- Güvenilir kaynak bulunması halinde istasyon bazlı fiyat karşılaştırması
+- Ana ekranda gün özeti ve gider verisi için dışa aktarma
+
 ## Veri Kaynağı
 
 Backend tarafı akaryakıt fiyatlarını web kaynağından çekip Supabase'e yazar. Piyasa Sinyali son 24 saatteki güncel haber başlıklarıyla üretilir; Gemini anahtarı varsa yalnızca bu başlıkları kısa bir beklenti analizine dönüştürür, anahtar yoksa kural tabanlı analiz üretilir. Mobil uygulama ise Supabase'den okur ve kullanıcıya koyu temalı, mobil odaklı bir arayüzle sunar.

@@ -253,6 +253,15 @@ export default function AnaSayfa() {
                   <Text style={styles.newsText} numberOfLines={2}>
                     {item.title}
                   </Text>
+                  {item.priceMentions?.length ? (
+                    <View style={styles.newsPriceList}>
+                      {item.priceMentions.map((price) => (
+                        <View key={`${item.title}-${price}`} style={styles.newsPriceChip}>
+                          <Text style={styles.newsPriceText}>{price}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
                 </View>
               ))}
             </View>
@@ -701,6 +710,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 14,
     marginLeft: 7,
+  },
+  newsPriceList: {
+    alignItems: 'flex-end',
+    gap: 4,
+    marginLeft: 6,
+  },
+  newsPriceChip: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  newsPriceText: {
+    color: colors.accent,
+    fontSize: 10,
+    fontWeight: '900',
   },
   fuelSignalList: {
     marginTop: 10,

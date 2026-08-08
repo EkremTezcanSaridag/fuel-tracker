@@ -782,6 +782,10 @@ function normalizeMarketSignalRecord(record) {
     ? rawNewsItems
         .slice(0, 3)
         .map((item) => ({
+          priceMentions: parseJsonList(item.price_mentions)
+            .map((mention) => mention?.display)
+            .filter(Boolean)
+            .slice(0, 2),
           source: item.source ?? 'Haber',
           title: item.title ?? '',
         }))
