@@ -120,45 +120,38 @@ export default function AnaSayfa() {
     })
   }, [data.prices, favCities])
 
-  const [selectedChartFuel, setSelectedChartFuel] = useState('all')
+  const [selectedChartFuelKey, setSelectedChartFuelKey] = useState('Benzin')
 
-  const activeSeriesList = useMemo(() => {
-    if (selectedChartFuel === 'all') return trendSeries
-    return trendSeries.filter((s) => s.key === selectedChartFuel)
-  }, [selectedChartFuel, trendSeries])
+  const currentChartSeries = useMemo(() => {
+    return trendSeries.find((s) => s.key === selectedChartFuelKey) ?? trendSeries[0] ?? { key: 'Benzin', color: colors.accent, values: [71.31, 71.31, 71.31, 71.31, 71.31, 71.31, 71.31] }
+  }, [selectedChartFuelKey, trendSeries])
 
-  const chartDomain = useMemo(() => {
-    const allValues = activeSeriesList.flatMap((s) => s.values).filter((v) => Number.isFinite(v) && v > 0)
-    if (allValues.length === 0) return { min: 20, max: 85 }
-    const min = Math.floor(Math.min(...allValues) - 1)
-    const max = Math.ceil(Math.max(...allValues) + 1)
-    return { min: Math.max(0, min), max }
-  }, [activeSeriesList])
+  const chartMetrics = useMemo(() => {
+    const vals = currentChartSeries.values ?? []
+    if (vals.length === 0) return { min: 0, max: 0, diff: 0, diffPct: 0, items: [] }
 
-  const dynamicGuides = useMemo(() => {
-    const min = chartDomain.min
-    const max = chartDomain.max
-    const mid = (min + max) / 2
-    return [
-      { label: `${max.toFixed(1)} TL`, top: 10 },
-      { label: `${mid.toFixed(1)} TL`, top: 56 },
-      { label: `${min.toFixed(1)} TL`, top: 100 },
-    ]
-  }, [chartDomain])
+    const min = Math.min(...vals)
+    const max = Math.max(...vals)
+    const range = Math.max(max - min, 0.4)
+    const first = vals[0]
+    const last = vals[vals.length - 1]
+    const diff = last - first
+    const diffPct = first > 0 ? (diff / first) * 100 : 0
 
-  const chartSeries = useMemo(
-    () =>
-      activeSeriesList.map((series) => {
-        const points = buildPoints(series.values, chartWidth, chartDomain)
+    const items = vals.map((v, i) => {
+      const heightPct = Math.round(35 + ((v - min) / range) * 55)
+      return {
+        day: days[i] ?? `G${i + 1}`,
+        value: v,
+        heightPct,
+        isToday: i === vals.length - 1,
+        isMin: v === min,
+        isMax: v === max,
+      }
+    })
 
-        return {
-          ...series,
-          points,
-          segments: buildSegments(points, series.strokeWidth ?? 3),
-        }
-      }),
-    [activeSeriesList, chartDomain, chartWidth],
-  )
+    return { min, max, diff, diffPct, items, last }
+  }, [currentChartSeries])
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -384,138 +377,89 @@ export default function AnaSayfa() {
           </ScrollView>
         </View>
 
-        <View style={styles.chartCard}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>7 Günlük Değişim Grafiği</Text>
-              <Text style={styles.sectionSubtitle}>Haftalık pompa fiyat hareketleri</Text>
+        {/* Modern 7 Günlük Fiyat Trendi Kartı */}
+        <View style={styles.modernTrendCard}>
+          <View style={styles.trendHeader}>
+            <View style={styles.trendHeaderLeft}>
+              <Text style={styles.trendTitle}>7 Günlük Fiyat Trendi</Text>
+              <Text style={styles.trendSubtitle}>Haftalık pompa değişim istatistikleri</Text>
             </View>
-            <MaterialCommunityIcons name="chart-bell-curve-cumulative" size={20} color={colors.accent} />
+            <View style={[styles.trendBadge, chartMetrics.diff > 0 ? styles.trendBadgeUp : chartMetrics.diff < 0 ? styles.trendBadgeDown : styles.trendBadgeFlat]}>
+              <MaterialCommunityIcons
+                name={chartMetrics.diff > 0 ? 'trending-up' : chartMetrics.diff < 0 ? 'trending-down' : 'minus'}
+                size={14}
+                color={chartMetrics.diff > 0 ? colors.danger : chartMetrics.diff < 0 ? colors.accent : colors.muted}
+              />
+              <Text style={[styles.trendBadgeText, { color: chartMetrics.diff > 0 ? colors.danger : chartMetrics.diff < 0 ? colors.accent : colors.muted }]}>
+                {chartMetrics.diff > 0 ? `+${chartMetrics.diff.toFixed(2)} ₺` : chartMetrics.diff < 0 ? `${chartMetrics.diff.toFixed(2)} ₺` : 'Sabit'}
+              </Text>
+            </View>
           </View>
 
-          {/* Interactive Fuel Selector Chips */}
-          <View style={styles.chartFilterRow}>
+          {/* Segmented Fuel Picker */}
+          <View style={styles.segmentedRow}>
             {[
-              { key: 'all', label: 'Hepsi' },
-              { key: 'Benzin', label: 'Benzin' },
-              { key: 'Motorin', label: 'Motorin' },
-              { key: 'LPG', label: 'LPG' },
-            ].map((chip) => {
-              const active = selectedChartFuel === chip.key
+              { key: 'Benzin', label: 'Benzin 95', color: colors.accent },
+              { key: 'Motorin', label: 'Motorin', color: colors.info },
+              { key: 'LPG', label: 'LPG', color: colors.warning },
+            ].map((fuel) => {
+              const isActive = selectedChartFuelKey === fuel.key
               return (
                 <Pressable
-                  key={chip.key}
-                  onPress={() => setSelectedChartFuel(chip.key)}
-                  style={[styles.chartFilterChip, active && styles.chartFilterChipActive]}
+                  key={fuel.key}
+                  onPress={() => setSelectedChartFuelKey(fuel.key)}
+                  style={[styles.segmentBtn, isActive && { backgroundColor: colors.surfaceAlt, borderColor: fuel.color }]}
                 >
-                  <Text style={[styles.chartFilterChipText, active && styles.chartFilterChipTextActive]}>{chip.label}</Text>
+                  <View style={[styles.segmentDot, { backgroundColor: fuel.color }]} />
+                  <Text style={[styles.segmentText, isActive && { color: colors.text, fontWeight: '900' }]}>{fuel.label}</Text>
                 </Pressable>
               )
             })}
           </View>
 
-          <View style={styles.chartArea}>
-            <View style={[styles.chartPlot, { width: chartWidth, height: chartHeight }]}>
-              <View style={styles.chartBackdropTop} />
-              <View style={styles.chartBackdropBottom} />
-
-              {days.map((day, index) => (
-                <View
-                  key={`${day}-guide`}
-                  style={[
-                    styles.verticalGridLine,
-                    {
-                      left: guideLeft(index, days.length, chartWidth, 12),
-                    },
-                  ]}
-                />
-              ))}
-
-              {dynamicGuides.map((guide) => (
-                <View key={guide.label} style={[styles.gridGuide, { top: guide.top }]}>
-                  <View style={styles.gridLine} />
-                  <Text style={styles.gridLabel}>{guide.label}</Text>
-                </View>
-              ))}
-
-              {chartSeries.map((series) => (
-                <View key={series.key} style={styles.lineLayer}>
-                  {series.segments.map((segment, index) => (
-                    <Fragment key={`${series.key}-${index}`}>
-                      <View
-                        style={[
-                          styles.lineSegmentGlow,
-                          {
-                            backgroundColor: series.color,
-                            left: segment.left,
-                            top: segment.top - 2,
-                            transform: [{ rotate: `${segment.angle}deg` }],
-                            width: segment.width,
-                          },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          styles.lineSegment,
-                          {
-                            backgroundColor: series.color,
-                            height: series.strokeWidth,
-                            left: segment.left,
-                            opacity: series.opacity ?? 0.9,
-                            top: segment.top,
-                            transform: [{ rotate: `${segment.angle}deg` }],
-                            width: segment.width,
-                          },
-                        ]}
-                      />
-                    </Fragment>
-                  ))}
-
-                  {series.points.map((point, index) => {
-                    const isLast = index === series.points.length - 1
-                    return (
-                      <Fragment key={`${series.key}-point-${index}`}>
-                        <View
-                          style={[
-                            isLast ? styles.chartPointActive : styles.chartPoint,
-                            {
-                              backgroundColor: series.color,
-                              borderColor: colors.bg,
-                              borderWidth: 2,
-                              left: point.x - (isLast ? 6 : 4),
-                              top: point.y - (isLast ? 6 : 4),
-                            },
-                          ]}
-                        />
-                        {isLast && selectedChartFuel !== 'all' ? (
-                          <View style={[styles.chartTooltipBadge, { left: Math.max(10, point.x - 30), top: Math.max(2, point.y - 24) }]}>
-                            <Text style={styles.chartTooltipText}>{point.value ? `${point.value.toFixed(2)}₺` : ''}</Text>
-                          </View>
-                        ) : null}
-                      </Fragment>
-                    )
-                  })}
-                </View>
-              ))}
-            </View>
-
-            <View style={[styles.dayRow, { width: chartWidth }]}>
-              {days.map((day) => (
-                <Text key={day} style={styles.dayLabel}>
-                  {day}
+          {/* Modern Visual Bar Chart Container */}
+          <View style={styles.barGraphBox}>
+            {chartMetrics.items.map((item) => (
+              <View key={item.day} style={styles.barColumn}>
+                <Text style={[styles.barValText, item.isToday && styles.barValToday]}>
+                  {item.value ? `${item.value.toFixed(1)}` : ''}
                 </Text>
-              ))}
-            </View>
+                <View style={styles.barTrack}>
+                  <View
+                    style={[
+                      styles.barFill,
+                      {
+                        height: `${item.heightPct}%`,
+                        backgroundColor: currentChartSeries.color,
+                        opacity: item.isToday ? 1 : 0.65,
+                      },
+                      item.isToday && styles.barFillToday,
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.barDayText, item.isToday && styles.barDayToday]}>{item.day}</Text>
+              </View>
+            ))}
           </View>
 
-          <View style={styles.legendRow}>
-            {trendSeries.map((item) => (
-              <Pressable key={item.key} onPress={() => setSelectedChartFuel(item.key)} style={[styles.legendItem, selectedChartFuel === item.key && styles.legendItemActive]}>
-                <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                <Text style={styles.legendText}>{item.key}</Text>
-                <Text style={styles.legendValue}>{formatLegendValue(item.values)}</Text>
-              </Pressable>
-            ))}
+          {/* Clean 3-Metric Summary Footer */}
+          <View style={styles.trendSummaryRow}>
+            <View style={styles.trendMetricTile}>
+              <Text style={styles.trendMetricLabel}>En Düşük</Text>
+              <Text style={styles.trendMetricVal}>{chartMetrics.min ? `${chartMetrics.min.toFixed(2)} ₺` : '--'}</Text>
+            </View>
+            <View style={styles.trendMetricDivider} />
+            <View style={styles.trendMetricTile}>
+              <Text style={styles.trendMetricLabel}>En Yüksek</Text>
+              <Text style={styles.trendMetricVal}>{chartMetrics.max ? `${chartMetrics.max.toFixed(2)} ₺` : '--'}</Text>
+            </View>
+            <View style={styles.trendMetricDivider} />
+            <View style={styles.trendMetricTile}>
+              <Text style={styles.trendMetricLabel}>Son Fiyat</Text>
+              <Text style={[styles.trendMetricVal, { color: currentChartSeries.color }]}>
+                {chartMetrics.last ? `${chartMetrics.last.toFixed(2)} ₺` : '--'}
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -1021,11 +965,163 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 12,
   },
-  sectionSubtitle: {
+  modernTrendCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+    ...shadows.card,
+  },
+  trendHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  trendHeaderLeft: {
+    flex: 1,
+  },
+  trendTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  trendSubtitle: {
     color: colors.mutedSoft,
     fontSize: 11,
     fontWeight: '700',
     marginTop: 2,
+  },
+  trendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: colors.bgSoft,
+    gap: 4,
+  },
+  trendBadgeUp: { backgroundColor: colors.dangerDark },
+  trendBadgeDown: { backgroundColor: colors.accentDark },
+  trendBadgeFlat: { backgroundColor: colors.bgSoft },
+  trendBadgeText: { fontSize: 11, fontWeight: '900' },
+
+  segmentedRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 14,
+  },
+  segmentBtn: {
+    flex: 1,
+    height: 34,
+    borderRadius: 7,
+    backgroundColor: colors.bgSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  segmentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  segmentText: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  barGraphBox: {
+    flexDirection: 'row',
+    height: 125,
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    paddingBottom: 4,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  barColumn: {
+    flex: 1,
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  barValText: {
+    color: colors.muted,
+    fontSize: 9,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  barValToday: {
+    color: colors.text,
+    fontWeight: '900',
+  },
+  barTrack: {
+    width: 14,
+    height: 80,
+    backgroundColor: colors.bgSoft,
+    borderRadius: 7,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  barFill: {
+    width: '100%',
+    borderTopLeftRadius: 7,
+    borderTopRightRadius: 7,
+  },
+  barFillToday: {
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  barDayText: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  barDayToday: {
+    color: colors.accent,
+    fontWeight: '900',
+  },
+
+  trendSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.bgSoft,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  trendMetricTile: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  trendMetricLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  trendMetricVal: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  trendMetricDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: colors.border,
   },
   chartFilterRow: {
     flexDirection: 'row',
