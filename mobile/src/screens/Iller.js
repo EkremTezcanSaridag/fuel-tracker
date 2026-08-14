@@ -7,7 +7,7 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
-import { detectCityFromCoords, fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands } from '../services/nearbyStations'
+import { detectCityFromCoords, fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands, stationRadii } from '../services/nearbyStations'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -40,6 +40,7 @@ export default function Iller() {
   const [favoriteCities, setFavoriteCities] = useState(defaultFavoriteCities)
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
   const [selectedBrandId, setSelectedBrandId] = useState('all')
+  const [selectedRadiusKm, setSelectedRadiusKm] = useState(15)
   const [customGpsCoords, setCustomGpsCoords] = useState(null)
   const [stationSort, setStationSort] = useState('distance') // 'distance' | 'price'
   const selectedFuelKey = selectedFuel.key
@@ -71,13 +72,14 @@ export default function Iller() {
       return getNearbyStations({
         userCoords: customGpsCoords,
         brandId: selectedBrandId,
+        radiusKm: selectedRadiusKm,
         sortBy: stationSort,
         search: searchQuery,
       })
     } catch (err) {
       return []
     }
-  }, [customGpsCoords, selectedBrandId, stationSort, searchQuery])
+  }, [customGpsCoords, selectedBrandId, selectedRadiusKm, stationSort, searchQuery])
 
   async function handleToggleFavorite(cityName) {
     const updated = await toggleFavoriteCity(cityName)
@@ -327,8 +329,25 @@ export default function Iller() {
               <MaterialCommunityIcons name="chevron-right" size={20} color={customGpsCoords ? colors.bg : colors.mutedSoft} />
             </Pressable>
 
-            {/* Marka Seçici Filtre Çipleri */}
+            {/* Mesafe Yarıçapı Filtre Çipleri */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
+              {stationRadii.map((rad) => {
+                const isSelected = selectedRadiusKm === rad.id
+                return (
+                  <Pressable
+                    key={rad.id}
+                    onPress={() => setSelectedRadiusKm(rad.id)}
+                    style={({ pressed }) => [styles.segment, isSelected && styles.segmentActive, pressed && styles.pressed]}
+                  >
+                    <MaterialCommunityIcons name="radius-outline" size={14} color={isSelected ? colors.accent : colors.mutedSoft} />
+                    <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>{rad.label}</Text>
+                  </Pressable>
+                )
+              })}
+            </ScrollView>
+
+            {/* Marka Seçici Filtre Çipleri */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.segmentRow, { marginTop: -4 }]}>
               {stationBrands.map((brand) => {
                 const isSelected = selectedBrandId === brand.id
                 return (

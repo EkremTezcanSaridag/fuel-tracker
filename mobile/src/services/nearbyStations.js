@@ -10,6 +10,13 @@ export const stationBrands = [
   { id: 'tp', name: 'Türkiye Petrolleri', color: '#E30613', icon: 'alpha-t-box' },
 ]
 
+export const stationRadii = [
+  { id: 5, label: '5 km Çap' },
+  { id: 15, label: '15 km Çap' },
+  { id: 30, label: '30 km Çap' },
+  { id: 60, label: '60 km (Tümü)' },
+]
+
 export function detectCityFromCoords(lat, lng) {
   if (!lat || !lng) return 'Eskişehir'
 
@@ -258,7 +265,7 @@ export async function fetchRealDeviceGpsLocation() {
   return { lat: 39.778, lng: 30.515 }
 }
 
-export function getNearbyStations({ userCoords = null, brandId = 'all', sortBy = 'distance', search = '' } = {}) {
+export function getNearbyStations({ userCoords = null, brandId = 'all', radiusKm = 60, sortBy = 'distance', search = '' } = {}) {
   // Safe default coordinates (Eskişehir fallback if no GPS)
   const activeLat = userCoords?.lat ?? 39.778
   const activeLng = userCoords?.lng ?? 30.515
@@ -288,9 +295,9 @@ export function getNearbyStations({ userCoords = null, brandId = 'all', sortBy =
     mapped = mapped.filter((s) => s.brandId === brandId)
   }
 
-  // Filter radius: If user GPS coords active and no text search, filter strictly for < 60 km radius
+  // Filter radius: strictly by selected radiusKm!
   if (userCoords && !search.trim()) {
-    const nearby = mapped.filter((s) => s.distanceKm <= 60)
+    const nearby = mapped.filter((s) => s.distanceKm <= radiusKm)
     mapped = nearby.length > 0 ? nearby : mapped
   }
 
