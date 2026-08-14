@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Pressable, RefreshControl, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native'
+import { Alert, Pressable, RefreshControl, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native'
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
-import { getNearbyStations, openStationDirections, stationBrands, userLocations } from '../services/nearbyStations'
+import { fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands, userLocations } from '../services/nearbyStations'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -41,9 +41,20 @@ export default function Iller() {
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
   const [selectedBrandId, setSelectedBrandId] = useState('all')
   const [userLocId, setUserLocId] = useState('loc-ist')
+  const [customGpsCoords, setCustomGpsCoords] = useState(null)
   const [stationSort, setStationSort] = useState('distance') // 'distance' | 'price'
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
+
+  async function handleGetLiveGps() {
+    try {
+      const coords = await fetchRealDeviceGpsLocation()
+      setCustomGpsCoords(coords)
+      Alert.alert('GPS Konumu Alındı', `Canlı GPS konumunuz (${coords.lat.toFixed(2)}, ${coords.lng.toFixed(2)}) alındı. En yakın istasyonlar güncellendi!`)
+    } catch (err) {
+      Alert.alert('GPS Konumu', 'GPS izni alınamadı. Aşağıdaki listeden bölgenizi seçebilirsiniz.')
+    }
+  }
 
   useEffect(() => {
     loadFavoriteCities().then(setFavoriteCities)
@@ -282,16 +293,26 @@ export default function Iller() {
             {/* Mevcut Konum Seçici Bar */}
             <View style={styles.locationSelectorCard}>
               <View style={styles.locationSelectorHeader}>
-                <MaterialCommunityIcons name="crosshairs-gps" size={16} color={colors.accent} />
-                <Text style={styles.locationSelectorTitle}>Mevcut Konumunuz (GPS Mesafesi)</Text>
+                <View style={styles.locTitleGroup}>
+                  <MaterialCommunityIcons name="crosshairs-gps" size={16} color={colors.accent} />
+                  <Text style={styles.locationSelectorTitle}>Mevcut Konumunuz (GPS)</Text>
+                </View>
+                <Pressable onPress={handleGetLiveGps} style={({ pressed }) => [styles.liveGpsBtn, customGpsCoords && styles.liveGpsBtnActive, pressed && styles.pressed]}>
+                  <MaterialCommunityIcons name="crosshairs-gps" size={13} color={colors.bg} />
+                  <Text style={styles.liveGpsBtnText}>{customGpsCoords ? 'Canlı GPS Aktif' : 'GPS Al'}</Text>
+                </Pressable>
               </View>
+
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.locScroll}>
                 {userLocations.map((loc) => {
-                  const isActive = userLocId === loc.id
+                  const isActive = !customGpsCoords && userLocId === loc.id
                   return (
                     <Pressable
                       key={loc.id}
-                      onPress={() => setUserLocId(loc.id)}
+                      onPress={() => {
+                        setCustomGpsCoords(null)
+                        setUserLocId(loc.id)
+                      }}
                       style={[styles.locChip, isActive && styles.locChipActive]}
                     >
                       <MaterialCommunityIcons name="navigation" size={12} color={isActive ? colors.bg : colors.accent} />
@@ -331,7 +352,7 @@ export default function Iller() {
               </View>
             </View>
 
-            {getNearbyStations({ userLocationId: userLocId, brandId: selectedBrandId, sortBy: stationSort, search: searchQuery }).map((st) => (
+            {getNearbyStations({ customCoords: customGpsCoords, userLocationId: userLocId, brandId: selectedBrandId, sortBy: stationSort, search: searchQuery }).map((st) => (
               <View key={st.id} style={styles.stationCard}>
                 <View style={styles.stationTopRow}>
                   <View style={styles.stationBrandBadge}>
@@ -745,8 +766,30 @@ const styles = StyleSheet.create({
   locationSelectorHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
     marginBottom: 8,
+  },
+  locTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  liveGpsBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  liveGpsBtnActive: {
+    backgroundColor: colors.accentDark,
+  },
+  liveGpsBtnText: {
+    color: colors.bg,
+    fontSize: 10,
+    fontWeight: '900',
   },
   locationSelectorTitle: {
     color: colors.text,

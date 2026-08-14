@@ -229,19 +229,51 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   return Number((R * c).toFixed(1))
 }
 
-export function getNearbyStations({ userLocationId = 'loc-ist', brandId = 'all', sortBy = 'distance', search = '' } = {}) {
-  const activeLoc = userLocations.find((l) => l.id === userLocationId) ?? userLocations[0]
+export function fetchRealDeviceGpsLocation() {
+  return new Promise((resolve, reject) => {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          resolve({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          })
+        },
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
+      )
+    } else {
+      reject(new Error('GPS desteklenmiyor.'))
+    }
+  })
+}
+
+export function getNearbyStations({ customCoords = null, userLocationId = 'loc-ist', brandId = 'all', sortBy = 'distance', search = '' } = {}) {
+  let activeLat = 40.9912
+  let activeLng = 29.0254
+  let activeCity = 'İstanbul'
+
+  if (customCoords && customCoords.lat && customCoords.lng) {
+    activeLat = customCoords.lat
+    activeLng = customCoords.lng
+    activeCity = ''
+  } else {
+    const activeLoc = userLocations.find((l) => l.id === userLocationId) ?? userLocations[0]
+    activeLat = activeLoc.lat
+    activeLng = activeLoc.lng
+    activeCity = activeLoc.city
+  }
 
   let mapped = mockStations.map((st) => {
-    const dist = calculateDistanceKm(activeLoc.lat, activeLoc.lng, st.latitude, st.longitude)
+    const dist = calculateDistanceKm(activeLat, activeLng, st.latitude, st.longitude)
     return {
       ...st,
       distanceKm: dist,
-      isSameCity: st.city.toLowerCase() === activeLoc.city.toLowerCase(),
+      isSameCity: activeCity ? st.city.toLowerCase() === activeCity.toLowerCase() : true,
     }
   })
 
-  // If user searched text, match against name, district, city, brand
+  // Search filter
   if (search.trim()) {
     const q = search.toLowerCase().trim()
     mapped = mapped.filter(
@@ -262,9 +294,8 @@ export function getNearbyStations({ userLocationId = 'loc-ist', brandId = 'all',
   if (sortBy === 'price') {
     mapped.sort((a, b) => a.benzin95 - b.benzin95)
   } else {
-    // Distance sort: prioritize same city first, then closest km!
     mapped.sort((a, b) => {
-      if (a.isSameCity !== b.isSameCity) {
+      if (activeCity && a.isSameCity !== b.isSameCity) {
         return a.isSameCity ? -1 : 1
       }
       return a.distanceKm - b.distanceKm
@@ -275,8 +306,9 @@ export function getNearbyStations({ userLocationId = 'loc-ist', brandId = 'all',
 }
 
 export function openStationDirections(station) {
+  const destination = `${station.latitude},${station.longitude}`
   const query = encodeURIComponent(`${station.name}, ${station.address}`)
-  const url = `https://www.google.com/maps/search/?api=1&query=${query}`
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&destination_place_id=${query}`
   Linking.openURL(url).catch(() => {
     alert('Harita uygulaması açılamadı.')
   })
