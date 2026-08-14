@@ -66,6 +66,19 @@ export default function Iller() {
     }
   }, [viewMode])
 
+  const stationsList = useMemo(() => {
+    try {
+      return getNearbyStations({
+        userCoords: customGpsCoords,
+        brandId: selectedBrandId,
+        sortBy: stationSort,
+        search: searchQuery,
+      })
+    } catch (err) {
+      return []
+    }
+  }, [customGpsCoords, selectedBrandId, stationSort, searchQuery])
+
   async function handleToggleFavorite(cityName) {
     const updated = await toggleFavoriteCity(cityName)
     setFavoriteCities(updated)
@@ -306,7 +319,7 @@ export default function Iller() {
                   {customGpsCoords ? 'Canlı GPS Konumunuz Aktif' : 'Mevcut Konumumu Kullan (GPS)'}
                 </Text>
                 <Text style={[styles.singleGpsSubtitle, customGpsCoords && styles.singleGpsSubActive]}>
-                  {customGpsCoords
+                  {customGpsCoords && typeof customGpsCoords.lat === 'number' && typeof customGpsCoords.lng === 'number'
                     ? `Konum: ${detectCityFromCoords(customGpsCoords.lat, customGpsCoords.lng)} (${customGpsCoords.lat.toFixed(2)}, ${customGpsCoords.lng.toFixed(2)}) · En yakın istasyonlar`
                     : 'Dokunarak canlı cihaz konumunuzdan en yakın istasyonları hesaplayın.'}
                 </Text>
@@ -331,86 +344,78 @@ export default function Iller() {
               })}
             </ScrollView>
 
-            {(() => {
-              const stationsList = getNearbyStations({ userCoords: customGpsCoords, brandId: selectedBrandId, sortBy: stationSort, search: searchQuery })
+            <View style={styles.stationSortRow}>
+              <Text style={styles.listTitle}>En Yakın İstasyonlar ({stationsList.length})</Text>
+              <View style={styles.sortTogglePill}>
+                <Pressable onPress={() => setStationSort('distance')} style={[styles.sortSubBtn, stationSort === 'distance' && styles.sortSubBtnActive]}>
+                  <Text style={[styles.sortSubText, stationSort === 'distance' && styles.sortSubTextActive]}>📍 Mesafe</Text>
+                </Pressable>
+                <Pressable onPress={() => setStationSort('price')} style={[styles.sortSubBtn, stationSort === 'price' && styles.sortSubBtnActive]}>
+                  <Text style={[styles.sortSubText, stationSort === 'price' && styles.sortSubTextActive]}>💰 Ucuz</Text>
+                </Pressable>
+              </View>
+            </View>
 
-              return (
-                <>
-                  <View style={styles.stationSortRow}>
-                    <Text style={styles.listTitle}>En Yakın İstasyonlar ({stationsList.length})</Text>
-                    <View style={styles.sortTogglePill}>
-                      <Pressable onPress={() => setStationSort('distance')} style={[styles.sortSubBtn, stationSort === 'distance' && styles.sortSubBtnActive]}>
-                        <Text style={[styles.sortSubText, stationSort === 'distance' && styles.sortSubTextActive]}>📍 Mesafe</Text>
-                      </Pressable>
-                      <Pressable onPress={() => setStationSort('price')} style={[styles.sortSubBtn, stationSort === 'price' && styles.sortSubBtnActive]}>
-                        <Text style={[styles.sortSubText, stationSort === 'price' && styles.sortSubTextActive]}>💰 Ucuz</Text>
-                      </Pressable>
-                    </View>
+            {stationsList.length === 0 && (
+              <View style={styles.emptyCard}>
+                <MaterialCommunityIcons name="crosshairs-gps" size={32} color={colors.accent} />
+                <Text style={styles.emptyTitle}>
+                  {customGpsCoords ? 'Yakınınızda İstasyon Bulunamadı' : 'Canlı Konumunuzu Alın'}
+                </Text>
+                <Text style={styles.emptyText}>
+                  {customGpsCoords
+                    ? 'Bulunduğunuz konumun 60 km çevresinde seçilen markaya ait istasyon bulunamadı.'
+                    : 'Yukarıdaki "Mevcut Konumumu Kullan" butonuna basarak veya arama kutusundan il/ilçe yazarak en yakın istasyonları listeleyebilirsiniz.'}
+                </Text>
+              </View>
+            )}
+
+            {stationsList.map((st) => (
+              <View key={st.id} style={styles.stationCard}>
+                <View style={styles.stationTopRow}>
+                  <View style={styles.stationBrandBadge}>
+                    <MaterialCommunityIcons name="gas-station" size={15} color={colors.accent} />
+                    <Text style={styles.stationBrandText}>{st.brand ?? 'Akaryakıt'}</Text>
                   </View>
+                  <View style={styles.distanceChip}>
+                    <MaterialCommunityIcons name="navigation-variant" size={12} color={colors.accent} />
+                    <Text style={styles.distanceChipText}>{(st.distanceKm ?? 1.5).toFixed(1)} km yakında</Text>
+                  </View>
+                </View>
 
-                  {stationsList.length === 0 && (
-                    <View style={styles.emptyCard}>
-                      <MaterialCommunityIcons name="crosshairs-gps" size={32} color={colors.accent} />
-                      <Text style={styles.emptyTitle}>
-                        {customGpsCoords ? 'Yakınınızda İstasyon Bulunamadı' : 'Canlı Konumunuzu Alın'}
-                      </Text>
-                      <Text style={styles.emptyText}>
-                        {customGpsCoords
-                          ? 'Bulunduğunuz konumun 50 km çevresinde seçilen markaya ait istasyon bulunamadı.'
-                          : 'Yukarıdaki "Mevcut Konumumu Kullan" butonuna basarak veya arama kutusundan il/ilçe yazarak en yakın istasyonları listeleyebilirsiniz.'}
-                      </Text>
-                    </View>
-                  )}
+                <Text style={styles.stationName}>{st.name ?? 'İstasyon'}</Text>
+                <Text style={styles.stationAddress}>{st.address ?? 'Adres'}</Text>
 
-                  {stationsList.map((st) => (
-                    <View key={st.id} style={styles.stationCard}>
-                      <View style={styles.stationTopRow}>
-                        <View style={styles.stationBrandBadge}>
-                          <MaterialCommunityIcons name="gas-station" size={15} color={colors.accent} />
-                          <Text style={styles.stationBrandText}>{st.brand}</Text>
-                        </View>
-                        <View style={styles.distanceChip}>
-                          <MaterialCommunityIcons name="navigation-variant" size={12} color={colors.accent} />
-                          <Text style={styles.distanceChipText}>{st.distanceKm} km yakında</Text>
-                        </View>
+                <View style={styles.stationPricesRow}>
+                  <View style={styles.stationPriceBox}>
+                    <Text style={styles.stFuelLabel}>Benzin 95</Text>
+                    <Text style={styles.stFuelVal}>{(st.benzin95 ?? 71.2).toFixed(2)} ₺</Text>
+                  </View>
+                  <View style={styles.stationPriceBox}>
+                    <Text style={styles.stFuelLabel}>Motorin</Text>
+                    <Text style={styles.stFuelVal}>{(st.motorin ?? 79.7).toFixed(2)} ₺</Text>
+                  </View>
+                  <View style={styles.stationPriceBox}>
+                    <Text style={styles.stFuelLabel}>LPG</Text>
+                    <Text style={styles.stFuelVal}>{(st.lpg ?? 36.1).toFixed(2)} ₺</Text>
+                  </View>
+                </View>
+
+                <View style={styles.stationFooterRow}>
+                  <View style={styles.servicesChipRow}>
+                    {(st.services ?? []).slice(0, 3).map((srv) => (
+                      <View key={srv} style={styles.srvBadge}>
+                        <Text style={styles.srvBadgeText}>{srv}</Text>
                       </View>
-
-                      <Text style={styles.stationName}>{st.name}</Text>
-                      <Text style={styles.stationAddress}>{st.address}</Text>
-
-                      <View style={styles.stationPricesRow}>
-                        <View style={styles.stationPriceBox}>
-                          <Text style={styles.stFuelLabel}>Benzin 95</Text>
-                          <Text style={styles.stFuelVal}>{st.benzin95.toFixed(2)} ₺</Text>
-                        </View>
-                        <View style={styles.stationPriceBox}>
-                          <Text style={styles.stFuelLabel}>Motorin</Text>
-                          <Text style={styles.stFuelVal}>{st.motorin.toFixed(2)} ₺</Text>
-                        </View>
-                        <View style={styles.stationPriceBox}>
-                          <Text style={styles.stFuelLabel}>LPG</Text>
-                          <Text style={styles.stFuelVal}>{st.lpg.toFixed(2)} ₺</Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.stationFooterRow}>
-                        <View style={styles.servicesChipRow}>
-                          {st.services.slice(0, 3).map((srv) => (
-                            <View key={srv} style={styles.srvBadge}>
-                              <Text style={styles.srvBadgeText}>{srv}</Text>
-                            </View>
-                          ))}
-                        </View>
-                        <Pressable onPress={() => openStationDirections(st)} style={({ pressed }) => [styles.mapDirectionsBtn, pressed && styles.pressed]}>
-                          <MaterialCommunityIcons name="map-marker-path" size={15} color={colors.bg} />
-                          <Text style={styles.mapDirectionsBtnText}>Yol Tarifi</Text>
-                        </Pressable>
-                      </View>
-                    </View>
-                  ))}
-                </>
-              )
-            })()}
+                    ))}
+                  </View>
+                  <Pressable onPress={() => openStationDirections(st)} style={({ pressed }) => [styles.mapDirectionsBtn, pressed && styles.pressed]}>
+                    <MaterialCommunityIcons name="map-marker-path" size={15} color={colors.bg} />
+                    <Text style={styles.mapDirectionsBtnText}>Yol Tarifi</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
           </>
         )}
       </ScrollView>
