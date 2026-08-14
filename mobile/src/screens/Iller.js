@@ -7,7 +7,7 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
-import { fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands } from '../services/nearbyStations'
+import { detectCityFromCoords, fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands } from '../services/nearbyStations'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -310,7 +310,7 @@ export default function Iller() {
                 </Text>
                 <Text style={[styles.singleGpsSubtitle, customGpsCoords && styles.singleGpsSubActive]}>
                   {customGpsCoords
-                    ? `Enlem: ${customGpsCoords.lat.toFixed(2)} · Türkiye geneli en yakın istasyonlar`
+                    ? `Konum: ${detectCityFromCoords(customGpsCoords.lat, customGpsCoords.lng)} (${customGpsCoords.lat.toFixed(2)}, ${customGpsCoords.lng.toFixed(2)}) · En yakın istasyonlar`
                     : 'Dokunarak canlı cihaz konumunuzdan en yakın istasyonları hesaplayın.'}
                 </Text>
               </View>

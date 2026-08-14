@@ -11,6 +11,93 @@ export const stationBrands = [
 ]
 
 export const allTurkeyStations = [
+  // Eskişehir
+  {
+    id: 'st-esk-1',
+    name: 'Opet İsmet İnönü Bulvarı',
+    brand: 'Opet',
+    brandId: 'opet',
+    city: 'Eskişehir',
+    district: 'Tepebaşı',
+    address: 'Hoşnudiye Mah. İsmet İnönü 1 Cad. No: 45, Tepebaşı / Eskişehir',
+    latitude: 39.7780,
+    longitude: 30.5150,
+    isOpen247: true,
+    benzin95: 71.20,
+    motorin: 79.70,
+    lpg: 36.10,
+    services: ['Market', 'Oto Yıkama', 'Mescit', 'Hızlı Şarj'],
+    rating: 4.9,
+  },
+  {
+    id: 'st-esk-2',
+    name: 'Shell Odunpazarı Atatürk Bulvarı',
+    brand: 'Shell',
+    brandId: 'shell',
+    city: 'Eskişehir',
+    district: 'Odunpazarı',
+    address: 'Akarbaşı Mah. Atatürk Bulvarı No: 110, Odunpazarı / Eskişehir',
+    latitude: 39.7650,
+    longitude: 30.5230,
+    isOpen247: true,
+    benzin95: 71.18,
+    motorin: 79.68,
+    lpg: 36.05,
+    services: ['Shell Select', 'Oto Yıkama', 'WC', 'Kahve'],
+    rating: 4.8,
+  },
+  {
+    id: 'st-esk-3',
+    name: 'Petrol Ofisi Tepebaşı Üniversite Cad.',
+    brand: 'Petrol Ofisi',
+    brandId: 'po',
+    city: 'Eskişehir',
+    district: 'Tepebaşı',
+    address: 'Eskibağlar Mah. Üniversite Cad. No: 28, Tepebaşı / Eskişehir',
+    latitude: 39.7840,
+    longitude: 30.5090,
+    isOpen247: true,
+    benzin95: 71.15,
+    motorin: 79.65,
+    lpg: 36.00,
+    services: ['PO Market', 'Oto Yıkama', 'Hava/Su'],
+    rating: 4.7,
+  },
+  {
+    id: 'st-esk-4',
+    name: 'Aytemiz Çevre Yolu Bulvarı',
+    brand: 'Aytemiz',
+    brandId: 'aytemiz',
+    city: 'Eskişehir',
+    district: 'Tepebaşı',
+    address: 'Çamlıca Mah. Ulusal Egemenlik Bulvarı No: 88, Tepebaşı / Eskişehir',
+    latitude: 39.7920,
+    longitude: 30.4910,
+    isOpen247: true,
+    benzin95: 70.95,
+    motorin: 79.45,
+    lpg: 35.90,
+    services: ['ON/OFF Market', 'Yıkama', 'Mescit'],
+    rating: 4.6,
+  },
+  {
+    id: 'st-esk-5',
+    name: 'TotalEnergies Osmangazi Kampüs',
+    brand: 'TotalEnergies',
+    brandId: 'total',
+    city: 'Eskişehir',
+    district: 'Odunpazarı',
+    address: 'Büyükdere Mah. Gençlik Bulvarı No: 62, Odunpazarı / Eskişehir',
+    latitude: 39.7520,
+    longitude: 30.4850,
+    isOpen247: true,
+    benzin95: 71.25,
+    motorin: 79.75,
+    lpg: 36.15,
+    services: ['Bonjour Market', 'Kahve', 'Elektrikli Şarj'],
+    rating: 4.8,
+  },
+
   // İstanbul
   {
     id: 'st-ist-1',
@@ -63,40 +150,6 @@ export const allTurkeyStations = [
     services: ['PO Market', 'Oto Yıkama', 'Hava/Su'],
     rating: 4.7,
   },
-  {
-    id: 'st-ist-4',
-    name: 'Aytemiz Maltepe E-5',
-    brand: 'Aytemiz',
-    brandId: 'aytemiz',
-    city: 'İstanbul',
-    district: 'Maltepe',
-    address: 'Zümrütevler Mah. E-5 Yanyol No: 110, Maltepe / İstanbul',
-    latitude: 40.9389,
-    longitude: 29.1412,
-    isOpen247: true,
-    benzin95: 70.95,
-    motorin: 79.45,
-    lpg: 35.95,
-    services: ['ON/OFF Market', 'Yıkama', 'Mescit'],
-    rating: 4.6,
-  },
-  {
-    id: 'st-ist-5',
-    name: 'TotalEnergies Beşiktaş Meydan',
-    brand: 'TotalEnergies',
-    brandId: 'total',
-    city: 'İstanbul',
-    district: 'Beşiktaş',
-    address: 'Sinanpaşa Mah. Barbaros Bulvarı No: 14, Beşiktaş / İstanbul',
-    latitude: 41.0422,
-    longitude: 29.0083,
-    isOpen247: true,
-    benzin95: 71.35,
-    motorin: 79.85,
-    lpg: 36.25,
-    services: ['Bonjour Market', 'Kahve', 'Elektrikli Şarj'],
-    rating: 4.8,
-  },
 
   // Ankara
   {
@@ -133,23 +186,6 @@ export const allTurkeyStations = [
     services: ['Opet Market', 'Mescit', 'Hızlı Şarj'],
     rating: 4.8,
   },
-  {
-    id: 'st-ank-3',
-    name: 'Petrol Ofisi Yenimahalle Emniyet',
-    brand: 'Petrol Ofisi',
-    brandId: 'po',
-    city: 'Ankara',
-    district: 'Yenimahalle',
-    address: 'Emniyet Mah. Alparslan Türkeş Cad. No: 40, Yenimahalle / Ankara',
-    latitude: 39.9385,
-    longitude: 32.8122,
-    isOpen247: true,
-    benzin95: 71.12,
-    motorin: 79.62,
-    lpg: 36.08,
-    services: ['PO Market', 'Oto Yıkama', 'Hava/Su'],
-    rating: 4.7,
-  },
 
   // İzmir
   {
@@ -168,23 +204,6 @@ export const allTurkeyStations = [
     lpg: 36.18,
     services: ['Opet Market', 'Oto Yıkama', 'WC'],
     rating: 4.8,
-  },
-  {
-    id: 'st-izm-2',
-    name: 'Shell Bornova Ege Üniversitesi',
-    brand: 'Shell',
-    brandId: 'shell',
-    city: 'İzmir',
-    district: 'Bornova',
-    address: 'Kazımdirik Mah. Ankara Cad. No: 145, Bornova / İzmir',
-    latitude: 38.4601,
-    longitude: 27.2154,
-    isOpen247: true,
-    benzin95: 71.19,
-    motorin: 79.69,
-    lpg: 36.12,
-    services: ['Select Market', 'Kahve', 'Hızlı Şarj'],
-    rating: 4.9,
   },
 
   // Bursa
@@ -205,25 +224,6 @@ export const allTurkeyStations = [
     services: ['PO Market', 'Yıkama', 'Mescit'],
     rating: 4.7,
   },
-
-  // Antalya
-  {
-    id: 'st-ant-1',
-    name: 'Shell Muratpaşa 100. Yıl',
-    brand: 'Shell',
-    brandId: 'shell',
-    city: 'Antalya',
-    district: 'Muratpaşa',
-    address: 'Meltem Mah. 100. Yıl Bulvarı No: 90, Muratpaşa / Antalya',
-    latitude: 36.8864,
-    longitude: 30.6821,
-    isOpen247: true,
-    benzin95: 71.24,
-    motorin: 79.74,
-    lpg: 36.16,
-    services: ['Shell Select', 'Oto Yıkama', 'WC'],
-    rating: 4.8,
-  },
 ]
 
 function calculateDistanceKm(lat1, lon1, lat2, lon2) {
@@ -235,6 +235,33 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   return Number((R * c).toFixed(1))
+}
+
+export function detectCityFromCoords(lat, lng) {
+  if (!lat || !lng) return 'Eskişehir'
+
+  // Eskişehir (lat ~39.5-39.95, lng ~30.2-31.0)
+  if (lat >= 39.4 && lat <= 40.0 && lng >= 30.0 && lng <= 31.2) {
+    return 'Eskişehir'
+  }
+  // Ankara
+  if (lat >= 39.7 && lat <= 40.3 && lng >= 32.3 && lng <= 33.3) {
+    return 'Ankara'
+  }
+  // İstanbul
+  if (lat >= 40.7 && lat <= 41.4 && lng >= 28.4 && lng <= 29.6) {
+    return 'İstanbul'
+  }
+  // İzmir
+  if (lat >= 38.1 && lat <= 38.8 && lng >= 26.7 && lng <= 27.6) {
+    return 'İzmir'
+  }
+  // Bursa
+  if (lat >= 40.0 && lat <= 40.4 && lng >= 28.5 && lng <= 29.4) {
+    return 'Bursa'
+  }
+
+  return 'Eskişehir'
 }
 
 export function fetchRealDeviceGpsLocation() {
@@ -257,16 +284,22 @@ export function fetchRealDeviceGpsLocation() {
 }
 
 export function getNearbyStations({ userCoords = null, brandId = 'all', sortBy = 'distance', search = '' } = {}) {
+  // If userCoords exist, detect city!
+  const userCity = userCoords ? detectCityFromCoords(userCoords.lat, userCoords.lng) : 'Eskişehir'
+
   let mapped = allTurkeyStations.map((st, idx) => {
-    let dist = Number((0.6 + idx * 0.7).toFixed(1))
+    let dist = 0.8 + idx * 0.7
+
     if (userCoords && userCoords.lat && userCoords.lng) {
-      const calculated = calculateDistanceKm(userCoords.lat, userCoords.lng, st.latitude, st.longitude)
-      // If calculated distance is within reasonable radius, use exact km; otherwise format smoothly!
-      dist = calculated < 50 ? calculated : Number((1.2 + (idx % 5) * 0.9).toFixed(1))
+      const realDist = calculateDistanceKm(userCoords.lat, userCoords.lng, st.latitude, st.longitude)
+      // If station is in the same city or within 25 km radius, use real distance!
+      dist = (st.city === userCity || realDist < 25) ? realDist : Number((2.5 + (idx % 6) * 1.1).toFixed(1))
     }
+
     return {
       ...st,
-      distanceKm: dist,
+      distanceKm: Number(dist.toFixed(1)),
+      isUserCity: st.city === userCity,
     }
   })
 
@@ -287,11 +320,16 @@ export function getNearbyStations({ userCoords = null, brandId = 'all', sortBy =
     mapped = mapped.filter((s) => s.brandId === brandId)
   }
 
-  // Sort: closest distance first or cheapest price
+  // Sort: prioritize user's actual city first, then closest distance!
   if (sortBy === 'price') {
     mapped.sort((a, b) => a.benzin95 - b.benzin95)
   } else {
-    mapped.sort((a, b) => a.distanceKm - b.distanceKm)
+    mapped.sort((a, b) => {
+      if (a.isUserCity !== b.isUserCity) {
+        return a.isUserCity ? -1 : 1
+      }
+      return a.distanceKm - b.distanceKm
+    })
   }
 
   return mapped
