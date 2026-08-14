@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
+import { fuelTabs } from '../services/fuelData'
 import {
   defaultNotificationSettings,
   getNotificationPermissionStatus,
@@ -13,6 +14,14 @@ import {
   requestRemoteTestNotification,
   saveAndSyncNotificationSettings,
 } from '../services/notifications'
+import {
+  addCustomAlert,
+  alertConditions,
+  defaultAlerts,
+  deleteCustomAlert,
+  loadCustomAlerts,
+  toggleCustomAlert,
+} from '../services/customAlerts'
 
 const fuelChips = ['Benzin', 'Motorin', 'LPG']
 
@@ -67,6 +76,15 @@ function formatToken(token) {
 export default function Bildirimler() {
   const { data } = useFuelData()
   const [settings, setSettings] = useState(defaultNotificationSettings)
+  const [customAlerts, setCustomAlerts] = useState(defaultAlerts)
+  const [newAlertModalOpen, setNewAlertModalOpen] = useState(false)
+
+  // New Custom Alert Form State
+  const [alertCity, setAlertCity] = useState('İstanbul')
+  const [alertFuelKey, setAlertFuelKey] = useState('benzin95')
+  const [alertCondition, setAlertCondition] = useState('below_price')
+  const [alertTargetValue, setAlertTargetValue] = useState('70')
+
   const [permission, setPermission] = useState({
     canAskAgain: true,
     expoPushToken: null,
@@ -93,13 +111,19 @@ export default function Bildirimler() {
     loadNotificationSettings().then(async (storedSettings) => {
       const currentPermission = await getNotificationPermissionStatus(storedSettings, registrationMeta)
 
-        if (!isMounted) {
-          return
-        }
+      if (!isMounted) {
+        return
+      }
 
-        setSettings(storedSettings)
-        setPermission(currentPermission)
-        setLoading(false)
+      setSettings(storedSettings)
+      setPermission(currentPermission)
+      setLoading(false)
+    })
+
+    loadCustomAlerts().then((alerts) => {
+      if (isMounted) {
+        setCustomAlerts(alerts)
+      }
     })
 
     return () => {
@@ -194,6 +218,41 @@ export default function Bildirimler() {
     }
   }
 
+  async function handleCreateCustomAlert() {
+    const selectedFuelMeta = fuelTabs.find((f) => f.key === alertFuelKey) ?? fuelTabs[0]
+
+    const updatedAlerts = await addCustomAlert({
+      city: alertCity,
+      condition: alertCondition,
+      fuelKey: alertFuelKey,
+      fuelTitle: selectedFuelMeta.title,
+      targetValue: alertTargetValue.trim(),
+    })
+
+    setCustomAlerts(updatedAlerts)
+    setNewAlertModalOpen(false)
+    Alert.alert('Fiyat Alarmı Eklendi', `${alertCity} ${selectedFuelMeta.title} için özel alarmınız aktif tutuldu.`)
+  }
+
+  async function handleToggleAlert(id) {
+    const updated = await toggleCustomAlert(id)
+    setCustomAlerts(updated)
+  }
+
+  async function handleDeleteAlert(id) {
+    Alert.alert('Alarmı Sil', 'Bu özel bildirim alarmını silmek istediğinize emin misiniz?', [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Sil',
+        style: 'destructive',
+        onPress: async () => {
+          const updated = await deleteCustomAlert(id)
+          setCustomAlerts(updated)
+        },
+      },
+    ])
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="light" />
@@ -209,7 +268,7 @@ export default function Bildirimler() {
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
             <Text style={styles.title}>Bildirimler</Text>
-            <Text style={styles.subtitle}>Fiyat değişimlerini ve özet raporları yönetin.</Text>
+            <Text style={styles.subtitle}>Fiyat değişimlerini ve özel alarmları yönetin.</Text>
           </View>
           <View style={[styles.statusBadge, styles[`${permissionCopy.tone}Badge`]]}>
             <View style={[styles.statusDot, styles[`${permissionCopy.tone}Dot`]]} />
@@ -264,6 +323,181 @@ export default function Bildirimler() {
             <Text style={styles.ghostButtonText}>Test Gönder</Text>
           </Pressable>
         </View>
+
+        {/* Kişisel Fiyat Alarmları Paneli */}
+        <View style={styles.panel}>
+          <View style={styles.panelHeaderRow}>
+            <View>
+              <Text style={styles.panelTitle}>Kişisel Fiyat Alarmları</Text>
+              <Text style={styles.panelSubtitle}>Hedef eşiklere ulaşıldığında anında haberdar olursunuz.</Text>
+            </View>
+            <Pressable onPress={() => setNewAlertModalOpen(true)} style={({ pressed }) => [styles.addAlertBtn, pressed && styles.pressed]}>
+              <MaterialCommunityIcons name="bell-plus-outline" size={16} color={colors.bg} />
+              <Text style={styles.addAlertBtnText}>+ Ekle</Text>
+            </Pressable>
+          </View>
+
+          {customAlerts.map((alertItem, idx) => {
+            const condMeta = alertConditions.find((c) => c.id === alertItem.condition) ?? alertConditions[0]
+            return (
+              <View key={alertItem.id} style={[styles.customAlertRow, idx === 0 && styles.rowFirst]}>
+                <View style={styles.customAlertIconBox}>
+                  <MaterialCommunityIcons name={condMeta.icon} size={18} color={colors.accent} />
+                </View>
+                <View style={styles.customAlertInfo}>
+                  <Text style={styles.customAlertTitle}>{alertItem.city} · {alertItem.fuelTitle}</Text>
+                  <Text style={styles.customAlertDesc}>
+                    {alertItem.condition === 'news_hike'
+                      ? 'Groq AI zam haberi taptığında uyar'
+                      : alertItem.condition === 'below_price'
+                      ? `Fiyat ${alertItem.targetValue} TL altına düşünce uyar`
+                      : `Fiyat ${alertItem.targetValue} TL aşınca uyar`}
+                  </Text>
+                </View>
+                <View style={styles.customAlertActions}>
+                  <Switch
+                    onValueChange={() => handleToggleAlert(alertItem.id)}
+                    thumbColor={alertItem.isEnabled ? colors.accent : '#D6DEE9'}
+                    trackColor={{ false: '#25364F', true: colors.accentDark }}
+                    value={alertItem.isEnabled}
+                  />
+                  <Pressable onPress={() => handleDeleteAlert(alertItem.id)} style={styles.deleteAlertBtn}>
+                    <MaterialCommunityIcons name="trash-can-outline" size={16} color={colors.danger} />
+                  </Pressable>
+                </View>
+              </View>
+            )
+          })}
+        </View>
+
+        <View style={styles.panel}>
+          <Text style={styles.panelTitle}>Uyarı Ayarları</Text>
+
+          {notificationRows.map((row, index) => (
+            <View key={row.key} style={[styles.row, index === 0 && styles.rowFirst]}>
+              <View style={styles.rowIcon}>
+                <MaterialCommunityIcons name={row.icon} size={18} color={colors.accent} />
+              </View>
+              <View style={styles.rowCopy}>
+                <Text style={styles.rowTitle}>{row.title}</Text>
+                <Text style={styles.rowDesc}>{row.desc}</Text>
+              </View>
+              <Switch
+                disabled={permissionBusy}
+                onValueChange={(value) => updateSetting(row.key, value)}
+                thumbColor={row.value ? colors.accent : '#D6DEE9'}
+                trackColor={{ false: '#25364F', true: colors.accentDark }}
+                value={row.value}
+              />
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.panel}>
+          <View style={styles.panelTop}>
+            <View>
+              <Text style={styles.panelTitle}>Sessiz Saatler</Text>
+              <Text style={styles.panelSubtitle}>Kritik olmayan bildirimleri duraklatır.</Text>
+            </View>
+            <Switch
+              onValueChange={(value) => updateSetting('quietHours', value)}
+              thumbColor={settings.quietHours ? colors.accent : '#D6DEE9'}
+              trackColor={{ false: '#25364F', true: colors.accentDark }}
+              value={settings.quietHours}
+            />
+          </View>
+
+          <View style={styles.timeRow}>
+            <View style={styles.timeChip}>
+              <MaterialCommunityIcons name="weather-night" size={15} color={colors.accent} />
+              <Text style={styles.timeText}>22:00</Text>
+            </View>
+            <View style={styles.timeLine} />
+            <View style={styles.timeChip}>
+              <MaterialCommunityIcons name="white-balance-sunny" size={15} color={colors.warning} />
+              <Text style={styles.timeText}>08:00</Text>
+            </View>
+          </View>
+        </View>
+
+      </ScrollView>
+
+      {/* Yeni Fiyat Alarmı Ekle Modalı */}
+      <Modal animationType="slide" visible={newAlertModalOpen} transparent onRequestClose={() => setNewAlertModalOpen(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setNewAlertModalOpen(false)} />
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleGroup}>
+                <MaterialCommunityIcons name="bell-plus" size={22} color={colors.accent} />
+                <Text style={styles.modalTitle}>Yeni Fiyat Alarmı Ekle</Text>
+              </View>
+              <Pressable accessibilityLabel="Kapat" onPress={() => setNewAlertModalOpen(false)} style={styles.closeButton}>
+                <MaterialCommunityIcons name="close" size={20} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.fieldLabel}>Şehir</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRowContainer}>
+                {['Tüm Şehirler', ...data.prices.map((p) => p.city)].map((cityName) => {
+                  const isSelected = alertCity === cityName
+                  return (
+                    <Pressable key={cityName} onPress={() => setAlertCity(cityName)} style={[styles.selectChip, isSelected && styles.selectChipActive]}>
+                      <Text style={[styles.selectChipText, isSelected && styles.selectChipTextActive]}>{cityName}</Text>
+                    </Pressable>
+                  )
+                })}
+              </ScrollView>
+
+              <Text style={styles.fieldLabel}>Yakıt Türü</Text>
+              <View style={styles.fuelSelectorRow}>
+                {fuelTabs.map((fuel) => {
+                  const selected = fuel.key === alertFuelKey
+                  return (
+                    <Pressable key={fuel.key} onPress={() => setAlertFuelKey(fuel.key)} style={[styles.fuelOption, selected && styles.fuelOptionActive]}>
+                      <MaterialCommunityIcons name={fuel.icon} size={15} color={selected ? colors.bg : colors.mutedSoft} />
+                      <Text style={[styles.fuelOptionText, selected && styles.fuelOptionTextActive]}>{fuel.label}</Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+
+              <Text style={styles.fieldLabel}>Alarm Koşulu</Text>
+              {alertConditions.map((cond) => {
+                const isSelected = alertCondition === cond.id
+                return (
+                  <Pressable key={cond.id} onPress={() => setAlertCondition(cond.id)} style={[styles.condCard, isSelected && styles.condCardActive]}>
+                    <MaterialCommunityIcons name={cond.icon} size={18} color={isSelected ? colors.accent : colors.mutedSoft} />
+                    <View style={styles.condCardCopy}>
+                      <Text style={[styles.condCardTitle, isSelected && styles.condCardTitleActive]}>{cond.label}</Text>
+                      <Text style={styles.condCardDesc}>{cond.desc}</Text>
+                    </View>
+                  </Pressable>
+                )
+              })}
+
+              {alertCondition !== 'news_hike' ? (
+                <View style={{ marginTop: 14 }}>
+                  <Text style={styles.fieldLabel}>Hedef Fiyat Eşiği (TL)</Text>
+                  <View style={styles.inputShell}>
+                    <TextInput value={alertTargetValue} onChangeText={setAlertTargetValue} keyboardType="decimal-pad" placeholder="70.00" placeholderTextColor={colors.muted} style={styles.input} />
+                    <Text style={styles.unit}>TL</Text>
+                  </View>
+                </View>
+              ) : null}
+
+              <Pressable onPress={handleCreateCustomAlert} style={({ pressed }) => [styles.saveAlertButton, pressed && styles.pressed]}>
+                <MaterialCommunityIcons name="check-circle-outline" size={19} color={colors.bg} />
+                <Text style={styles.saveAlertButtonText}>Alarmı Kur</Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </SafeAreaView>
+  )
+}
 
         <View style={styles.panel}>
           <Text style={styles.panelTitle}>Uyarı Ayarları</Text>
@@ -702,4 +936,91 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     marginLeft: 8,
   },
+  panelHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  addAlertBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  addAlertBtnText: {
+    color: colors.bg,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  customAlertRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingVertical: 10,
+  },
+  customAlertIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: colors.bgSoft,
+    alignItems: 'center',
+    justify: 'center',
+    marginRight: 10,
+  },
+  customAlertInfo: {
+    flex: 1,
+    paddingRight: 6,
+  },
+  customAlertTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  customAlertDesc: {
+    color: colors.mutedSoft,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  customAlertActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteAlertBtn: {
+    padding: 4,
+  },
+  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000099' },
+  modalSheet: { maxHeight: '88%', backgroundColor: colors.bg, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 24 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  modalTitleGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  modalTitle: { color: colors.text, fontSize: 18, fontWeight: '900' },
+  closeButton: { width: 36, height: 36, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  fieldLabel: { color: colors.mutedSoft, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 6 },
+  chipRowContainer: { flexDirection: 'row', gap: 8, paddingBottom: 6 },
+  selectChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: colors.bgSoft, borderWidth: 1, borderColor: colors.border },
+  selectChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  selectChipText: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  selectChipTextActive: { color: colors.bg },
+  fuelSelectorRow: { flexDirection: 'row', gap: 7 },
+  fuelOption: { flex: 1, height: 38, borderRadius: 7, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 },
+  fuelOptionActive: { borderColor: colors.accent, backgroundColor: colors.accent },
+  fuelOptionText: { color: colors.mutedSoft, fontSize: 12, fontWeight: '800' },
+  fuelOptionTextActive: { color: colors.bg },
+  condCard: { flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgSoft, marginBottom: 8, gap: 10 },
+  condCardActive: { borderColor: colors.accent, backgroundColor: colors.surfaceAlt },
+  condCardCopy: { flex: 1 },
+  condCardTitle: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  condCardTitleActive: { color: colors.accent },
+  condCardDesc: { color: colors.muted, fontSize: 10, fontWeight: '700', marginTop: 2 },
+  inputShell: { height: 44, borderRadius: 7, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgSoft, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center' },
+  input: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
+  unit: { color: colors.muted, fontSize: 11, fontWeight: '700' },
+  saveAlertButton: { height: 46, borderRadius: 8, backgroundColor: colors.accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18 },
+  saveAlertButtonText: { color: colors.bg, fontSize: 14, fontWeight: '900' },
 })
