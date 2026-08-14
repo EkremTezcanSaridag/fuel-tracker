@@ -21,25 +21,20 @@ const signalToneIcons = {
 }
 
 const chartHeight = 118
-const chartDomain = { min: 20, max: 70 }
-const chartGuides = [
-  { label: '65 TL', top: 16 },
-  { label: '45 TL', top: 58 },
-  { label: '25 TL', top: 100 },
-]
 
-function buildPoints(values, chartWidth) {
-  const horizontalPadding = 6
-  const verticalPadding = 8
+function buildPoints(values, chartWidth, domain) {
+  const horizontalPadding = 12
+  const verticalPadding = 12
   const usableWidth = chartWidth - horizontalPadding * 2
   const usableHeight = chartHeight - verticalPadding * 2
-  const step = usableWidth / (values.length - 1)
+  const step = usableWidth / Math.max(values.length - 1, 1)
+  const min = domain?.min ?? 20
+  const max = domain?.max ?? 85
 
   return values.map((value, index) => ({
     x: horizontalPadding + index * step,
-    y:
-      verticalPadding +
-      ((chartDomain.max - value) / (chartDomain.max - chartDomain.min)) * usableHeight,
+    y: verticalPadding + ((max - value) / Math.max(max - min, 1)) * usableHeight,
+    value,
   }))
 }
 
@@ -125,18 +120,44 @@ export default function AnaSayfa() {
     })
   }, [data.prices, favCities])
 
+  const [selectedChartFuel, setSelectedChartFuel] = useState('all')
+
+  const activeSeriesList = useMemo(() => {
+    if (selectedChartFuel === 'all') return trendSeries
+    return trendSeries.filter((s) => s.key === selectedChartFuel)
+  }, [selectedChartFuel, trendSeries])
+
+  const chartDomain = useMemo(() => {
+    const allValues = activeSeriesList.flatMap((s) => s.values).filter((v) => Number.isFinite(v) && v > 0)
+    if (allValues.length === 0) return { min: 20, max: 85 }
+    const min = Math.floor(Math.min(...allValues) - 1)
+    const max = Math.ceil(Math.max(...allValues) + 1)
+    return { min: Math.max(0, min), max }
+  }, [activeSeriesList])
+
+  const dynamicGuides = useMemo(() => {
+    const min = chartDomain.min
+    const max = chartDomain.max
+    const mid = (min + max) / 2
+    return [
+      { label: `${max.toFixed(1)} TL`, top: 10 },
+      { label: `${mid.toFixed(1)} TL`, top: 56 },
+      { label: `${min.toFixed(1)} TL`, top: 100 },
+    ]
+  }, [chartDomain])
+
   const chartSeries = useMemo(
     () =>
-      trendSeries.map((series) => {
-        const points = buildPoints(series.values, chartWidth)
+      activeSeriesList.map((series) => {
+        const points = buildPoints(series.values, chartWidth, chartDomain)
 
         return {
           ...series,
           points,
-          segments: buildSegments(points, series.strokeWidth),
+          segments: buildSegments(points, series.strokeWidth ?? 3),
         }
       }),
-    [chartWidth, trendSeries],
+    [activeSeriesList, chartDomain, chartWidth],
   )
 
   return (
@@ -365,8 +386,32 @@ export default function AnaSayfa() {
 
         <View style={styles.chartCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>7 Günlük Değişim</Text>
-            <MaterialCommunityIcons name="chart-line" size={17} color={colors.mutedSoft} />
+            <View>
+              <Text style={styles.sectionTitle}>7 Günlük Değişim Grafiği</Text>
+              <Text style={styles.sectionSubtitle}>Haftalık pompa fiyat hareketleri</Text>
+            </View>
+            <MaterialCommunityIcons name="chart-bell-curve-cumulative" size={20} color={colors.accent} />
+          </View>
+
+          {/* Interactive Fuel Selector Chips */}
+          <View style={styles.chartFilterRow}>
+            {[
+              { key: 'all', label: 'Hepsi' },
+              { key: 'Benzin', label: 'Benzin' },
+              { key: 'Motorin', label: 'Motorin' },
+              { key: 'LPG', label: 'LPG' },
+            ].map((chip) => {
+              const active = selectedChartFuel === chip.key
+              return (
+                <Pressable
+                  key={chip.key}
+                  onPress={() => setSelectedChartFuel(chip.key)}
+                  style={[styles.chartFilterChip, active && styles.chartFilterChipActive]}
+                >
+                  <Text style={[styles.chartFilterChipText, active && styles.chartFilterChipTextActive]}>{chip.label}</Text>
+                </Pressable>
+              )
+            })}
           </View>
 
           <View style={styles.chartArea}>
@@ -380,13 +425,13 @@ export default function AnaSayfa() {
                   style={[
                     styles.verticalGridLine,
                     {
-                      left: guideLeft(index, days.length, chartWidth, 6),
+                      left: guideLeft(index, days.length, chartWidth, 12),
                     },
                   ]}
                 />
               ))}
 
-              {chartGuides.map((guide) => (
+              {dynamicGuides.map((guide) => (
                 <View key={guide.label} style={[styles.gridGuide, { top: guide.top }]}>
                   <View style={styles.gridLine} />
                   <Text style={styles.gridLabel}>{guide.label}</Text>
@@ -416,7 +461,7 @@ export default function AnaSayfa() {
                             backgroundColor: series.color,
                             height: series.strokeWidth,
                             left: segment.left,
-                            opacity: series.opacity,
+                            opacity: series.opacity ?? 0.9,
                             top: segment.top,
                             transform: [{ rotate: `${segment.angle}deg` }],
                             width: segment.width,
@@ -426,21 +471,30 @@ export default function AnaSayfa() {
                     </Fragment>
                   ))}
 
-                  {series.points.map((point, index) => (
-                    <View
-                      key={`${series.key}-point-${index}`}
-                      style={[
-                        index === series.points.length - 1 ? styles.chartPointActive : styles.chartPoint,
-                        {
-                          backgroundColor: series.key === 'Motorin' ? series.color : colors.bg,
-                          borderColor: series.color,
-                          left: point.x - (index === series.points.length - 1 ? 5 : 3),
-                          opacity: series.opacity,
-                          top: point.y - (index === series.points.length - 1 ? 5 : 3),
-                        },
-                      ]}
-                    />
-                  ))}
+                  {series.points.map((point, index) => {
+                    const isLast = index === series.points.length - 1
+                    return (
+                      <Fragment key={`${series.key}-point-${index}`}>
+                        <View
+                          style={[
+                            isLast ? styles.chartPointActive : styles.chartPoint,
+                            {
+                              backgroundColor: series.color,
+                              borderColor: colors.bg,
+                              borderWidth: 2,
+                              left: point.x - (isLast ? 6 : 4),
+                              top: point.y - (isLast ? 6 : 4),
+                            },
+                          ]}
+                        />
+                        {isLast && selectedChartFuel !== 'all' ? (
+                          <View style={[styles.chartTooltipBadge, { left: Math.max(10, point.x - 30), top: Math.max(2, point.y - 24) }]}>
+                            <Text style={styles.chartTooltipText}>{point.value ? `${point.value.toFixed(2)}₺` : ''}</Text>
+                          </View>
+                        ) : null}
+                      </Fragment>
+                    )
+                  })}
                 </View>
               ))}
             </View>
@@ -456,11 +510,11 @@ export default function AnaSayfa() {
 
           <View style={styles.legendRow}>
             {trendSeries.map((item) => (
-              <View key={item.key} style={styles.legendItem}>
+              <Pressable key={item.key} onPress={() => setSelectedChartFuel(item.key)} style={[styles.legendItem, selectedChartFuel === item.key && styles.legendItemActive]}>
                 <View style={[styles.legendDot, { backgroundColor: item.color }]} />
                 <Text style={styles.legendText}>{item.key}</Text>
                 <Text style={styles.legendValue}>{formatLegendValue(item.values)}</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -967,11 +1021,62 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 12,
   },
+  sectionSubtitle: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  chartFilterRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 12,
+  },
+  chartFilterChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: colors.bgSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chartFilterChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  chartFilterChipText: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  chartFilterChipTextActive: {
+    color: colors.bg,
+    fontWeight: '900',
+  },
+  chartTooltipBadge: {
+    position: 'absolute',
+    backgroundColor: colors.accent,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    ...shadows.card,
+  },
+  chartTooltipText: {
+    color: colors.bg,
+    fontSize: 9,
+    fontWeight: '900',
+  },
   legendItem: {
     alignItems: 'center',
     flexDirection: 'row',
     marginHorizontal: 7,
     marginBottom: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  legendItemActive: {
+    backgroundColor: colors.bgSoft,
   },
   legendDot: {
     borderRadius: 999,
