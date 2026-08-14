@@ -10,8 +10,9 @@ export const stationBrands = [
   { id: 'tp', name: 'Türkiye Petrolleri', color: '#E30613', icon: 'alpha-t-box' },
 ]
 
-export const allTurkeyStations = [
-  // Eskişehir
+// Türkiye Geneli Gizli Akaryakıt İstasyonları Veritabanı
+export const turkeyStationDatabase = [
+  // --- ESKİŞEHİR ---
   {
     id: 'st-esk-1',
     name: 'Opet İsmet İnönü Bulvarı',
@@ -98,7 +99,7 @@ export const allTurkeyStations = [
     rating: 4.8,
   },
 
-  // İstanbul
+  // --- İSTANBUL ---
   {
     id: 'st-ist-1',
     name: 'Opet Kadıköy Rıhtım',
@@ -150,8 +151,42 @@ export const allTurkeyStations = [
     services: ['PO Market', 'Oto Yıkama', 'Hava/Su'],
     rating: 4.7,
   },
+  {
+    id: 'st-ist-4',
+    name: 'Aytemiz Maltepe E-5',
+    brand: 'Aytemiz',
+    brandId: 'aytemiz',
+    city: 'İstanbul',
+    district: 'Maltepe',
+    address: 'Zümrütevler Mah. E-5 Yanyol No: 110, Maltepe / İstanbul',
+    latitude: 40.9389,
+    longitude: 29.1412,
+    isOpen247: true,
+    benzin95: 70.95,
+    motorin: 79.45,
+    lpg: 35.95,
+    services: ['ON/OFF Market', 'Yıkama', 'Mescit'],
+    rating: 4.6,
+  },
+  {
+    id: 'st-ist-5',
+    name: 'TotalEnergies Beşiktaş Meydan',
+    brand: 'TotalEnergies',
+    brandId: 'total',
+    city: 'İstanbul',
+    district: 'Beşiktaş',
+    address: 'Sinanpaşa Mah. Barbaros Bulvarı No: 14, Beşiktaş / İstanbul',
+    latitude: 41.0422,
+    longitude: 29.0083,
+    isOpen247: true,
+    benzin95: 71.35,
+    motorin: 79.85,
+    lpg: 36.25,
+    services: ['Bonjour Market', 'Kahve', 'Elektrikli Şarj'],
+    rating: 4.8,
+  },
 
-  // Ankara
+  // --- ANKARA ---
   {
     id: 'st-ank-1',
     name: 'Shell Çankaya Eskişehir Yolu',
@@ -186,8 +221,25 @@ export const allTurkeyStations = [
     services: ['Opet Market', 'Mescit', 'Hızlı Şarj'],
     rating: 4.8,
   },
+  {
+    id: 'st-ank-3',
+    name: 'Petrol Ofisi Yenimahalle Emniyet',
+    brand: 'Petrol Ofisi',
+    brandId: 'po',
+    city: 'Ankara',
+    district: 'Yenimahalle',
+    address: 'Emniyet Mah. Alparslan Türkeş Cad. No: 40, Yenimahalle / Ankara',
+    latitude: 39.9385,
+    longitude: 32.8122,
+    isOpen247: true,
+    benzin95: 71.12,
+    motorin: 79.62,
+    lpg: 36.08,
+    services: ['PO Market', 'Oto Yıkama', 'Hava/Su'],
+    rating: 4.7,
+  },
 
-  // İzmir
+  // --- İZMİR ---
   {
     id: 'st-izm-1',
     name: 'Opet Alsancak Liman',
@@ -205,8 +257,25 @@ export const allTurkeyStations = [
     services: ['Opet Market', 'Oto Yıkama', 'WC'],
     rating: 4.8,
   },
+  {
+    id: 'st-izm-2',
+    name: 'Shell Bornova Ege Üniversitesi',
+    brand: 'Shell',
+    brandId: 'shell',
+    city: 'İzmir',
+    district: 'Bornova',
+    address: 'Kazımdirik Mah. Ankara Cad. No: 145, Bornova / İzmir',
+    latitude: 38.4601,
+    longitude: 27.2154,
+    isOpen247: true,
+    benzin95: 71.19,
+    motorin: 79.69,
+    lpg: 36.12,
+    services: ['Select Market', 'Kahve', 'Hızlı Şarj'],
+    rating: 4.9,
+  },
 
-  // Bursa
+  // --- BURSA ---
   {
     id: 'st-brs-1',
     name: 'Petrol Ofisi Nilüfer İzmir Yolu',
@@ -224,6 +293,44 @@ export const allTurkeyStations = [
     services: ['PO Market', 'Yıkama', 'Mescit'],
     rating: 4.7,
   },
+
+  // --- ANTALYA ---
+  {
+    id: 'st-ant-1',
+    name: 'Shell Muratpaşa 100. Yıl',
+    brand: 'Shell',
+    brandId: 'shell',
+    city: 'Antalya',
+    district: 'Muratpaşa',
+    address: 'Meltem Mah. 100. Yıl Bulvarı No: 90, Muratpaşa / Antalya',
+    latitude: 36.8864,
+    longitude: 30.6821,
+    isOpen247: true,
+    benzin95: 71.24,
+    motorin: 79.74,
+    lpg: 36.16,
+    services: ['Shell Select', 'Oto Yıkama', 'WC'],
+    rating: 4.8,
+  },
+
+  // --- KOCAELİ ---
+  {
+    id: 'st-koc-1',
+    name: 'Opet İzmit D-100',
+    brand: 'Opet',
+    brandId: 'opet',
+    city: 'Kocaeli',
+    district: 'İzmit',
+    address: 'Yahya Kaptan Mah. D-100 Karayolu No: 40, İzmit / Kocaeli',
+    latitude: 40.7650,
+    longitude: 29.9400,
+    isOpen247: true,
+    benzin95: 71.22,
+    motorin: 79.72,
+    lpg: 36.12,
+    services: ['Opet Market', 'Yıkama', 'Mescit'],
+    rating: 4.7,
+  },
 ]
 
 function calculateDistanceKm(lat1, lon1, lat2, lon2) {
@@ -235,33 +342,6 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   return Number((R * c).toFixed(1))
-}
-
-export function detectCityFromCoords(lat, lng) {
-  if (!lat || !lng) return 'Eskişehir'
-
-  // Eskişehir (lat ~39.5-39.95, lng ~30.2-31.0)
-  if (lat >= 39.4 && lat <= 40.0 && lng >= 30.0 && lng <= 31.2) {
-    return 'Eskişehir'
-  }
-  // Ankara
-  if (lat >= 39.7 && lat <= 40.3 && lng >= 32.3 && lng <= 33.3) {
-    return 'Ankara'
-  }
-  // İstanbul
-  if (lat >= 40.7 && lat <= 41.4 && lng >= 28.4 && lng <= 29.6) {
-    return 'İstanbul'
-  }
-  // İzmir
-  if (lat >= 38.1 && lat <= 38.8 && lng >= 26.7 && lng <= 27.6) {
-    return 'İzmir'
-  }
-  // Bursa
-  if (lat >= 40.0 && lat <= 40.4 && lng >= 28.5 && lng <= 29.4) {
-    return 'Bursa'
-  }
-
-  return 'Eskişehir'
 }
 
 export function fetchRealDeviceGpsLocation() {
@@ -284,26 +364,23 @@ export function fetchRealDeviceGpsLocation() {
 }
 
 export function getNearbyStations({ userCoords = null, brandId = 'all', sortBy = 'distance', search = '' } = {}) {
-  // If userCoords exist, detect city!
-  const userCity = userCoords ? detectCityFromCoords(userCoords.lat, userCoords.lng) : 'Eskişehir'
+  // 1. If no GPS coords and no search text, return empty list (waiting for GPS trigger)
+  if (!userCoords && !search.trim()) {
+    return []
+  }
 
-  let mapped = allTurkeyStations.map((st, idx) => {
-    let dist = 0.8 + idx * 0.7
-
+  let mapped = turkeyStationDatabase.map((st) => {
+    let dist = 999
     if (userCoords && userCoords.lat && userCoords.lng) {
-      const realDist = calculateDistanceKm(userCoords.lat, userCoords.lng, st.latitude, st.longitude)
-      // If station is in the same city or within 25 km radius, use real distance!
-      dist = (st.city === userCity || realDist < 25) ? realDist : Number((2.5 + (idx % 6) * 1.1).toFixed(1))
+      dist = calculateDistanceKm(userCoords.lat, userCoords.lng, st.latitude, st.longitude)
     }
-
     return {
       ...st,
-      distanceKm: Number(dist.toFixed(1)),
-      isUserCity: st.city === userCity,
+      distanceKm: dist,
     }
   })
 
-  // Filter search
+  // 2. Search query filter (if user typed text like "Eskişehir", "Kadıköy", "Shell")
   if (search.trim()) {
     const q = search.toLowerCase().trim()
     mapped = mapped.filter(
@@ -315,21 +392,21 @@ export function getNearbyStations({ userCoords = null, brandId = 'all', sortBy =
     )
   }
 
-  // Filter brand
+  // 3. Brand filter
   if (brandId && brandId !== 'all') {
     mapped = mapped.filter((s) => s.brandId === brandId)
   }
 
-  // Sort: prioritize user's actual city first, then closest distance!
+  // 4. GPS Vicinity Filter: If GPS is active and no explicit search, show ONLY stations within user's region (< 50 km)
+  if (userCoords && !search.trim()) {
+    mapped = mapped.filter((s) => s.distanceKm <= 50)
+  }
+
+  // 5. Sort closest first or cheapest price
   if (sortBy === 'price') {
     mapped.sort((a, b) => a.benzin95 - b.benzin95)
   } else {
-    mapped.sort((a, b) => {
-      if (a.isUserCity !== b.isUserCity) {
-        return a.isUserCity ? -1 : 1
-      }
-      return a.distanceKm - b.distanceKm
-    })
+    mapped.sort((a, b) => a.distanceKm - b.distanceKm)
   }
 
   return mapped
