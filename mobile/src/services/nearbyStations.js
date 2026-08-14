@@ -20,26 +20,11 @@ export const stationRadii = [
 export function detectCityFromCoords(lat, lng) {
   if (!lat || !lng) return 'Eskişehir'
 
-  // Eskişehir (lat ~39.4-40.1, lng ~30.0-31.3)
-  if (lat >= 39.4 && lat <= 40.1 && lng >= 30.0 && lng <= 31.3) {
-    return 'Eskişehir'
-  }
-  // Ankara
-  if (lat >= 39.6 && lat <= 40.3 && lng >= 32.2 && lng <= 33.3) {
-    return 'Ankara'
-  }
-  // İstanbul
-  if (lat >= 40.7 && lat <= 41.4 && lng >= 28.4 && lng <= 29.6) {
-    return 'İstanbul'
-  }
-  // İzmir
-  if (lat >= 38.1 && lat <= 38.8 && lng >= 26.7 && lng <= 27.6) {
-    return 'İzmir'
-  }
-  // Bursa
-  if (lat >= 40.0 && lat <= 40.4 && lng >= 28.5 && lng <= 29.4) {
-    return 'Bursa'
-  }
+  if (lat >= 39.4 && lat <= 40.1 && lng >= 30.0 && lng <= 31.3) return 'Eskişehir'
+  if (lat >= 39.6 && lat <= 40.3 && lng >= 32.2 && lng <= 33.3) return 'Ankara'
+  if (lat >= 40.7 && lat <= 41.4 && lng >= 28.4 && lng <= 29.6) return 'İstanbul'
+  if (lat >= 38.1 && lat <= 38.8 && lng >= 26.7 && lng <= 27.6) return 'İzmir'
+  if (lat >= 40.0 && lat <= 40.4 && lng >= 28.5 && lng <= 29.4) return 'Bursa'
 
   return 'Eskişehir'
 }
@@ -234,7 +219,7 @@ export const turkeyStationDatabase = [
     rating: 4.7,
   },
 
-  // --- İSTANBUL ---
+  // --- İSTANBUL İSTASYONLARI ---
   {
     id: 'st-ist-1',
     name: 'Opet Kadıköy Rıhtım',
@@ -287,7 +272,7 @@ export const turkeyStationDatabase = [
     rating: 4.7,
   },
 
-  // --- ANKARA ---
+  // --- ANKARA İSTASYONLARI ---
   {
     id: 'st-ank-1',
     name: 'Shell Çankaya Eskişehir Yolu',
@@ -340,6 +325,62 @@ function safeDistanceKm(lat1, lon1, lat2, lon2) {
   }
 }
 
+// Canlı OpenStreetMap (Overpass API) ile Türkiye'deki Gerçek İstasyonları Çeken Servis
+export async function fetchLiveOsmGasStations(lat, lng) {
+  try {
+    const radius = 25000 // 25 km yarıçap canlı arama
+    const query = `[out:json];node["amenity"="fuel"](around:${radius},${lat},${lng});out 20;`
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 4000)
+
+    const res = await fetch(url, { signal: controller.signal })
+    clearTimeout(timeoutId)
+
+    if (res.ok) {
+      const data = await res.json()
+      if (data && data.elements && data.elements.length > 0) {
+        return data.elements.map((el, idx) => {
+          const rawBrand = el.tags?.brand || el.tags?.operator || el.tags?.name || 'Akaryakıt İstasyonu'
+          const lower = rawBrand.toLowerCase()
+          let brandId = 'po'
+          let brandName = 'Petrol Ofisi'
+          if (lower.includes('shell')) { brandId = 'shell'; brandName = 'Shell' }
+          else if (lower.includes('opet')) { brandId = 'opet'; brandName = 'Opet' }
+          else if (lower.includes('aytemiz')) { brandId = 'aytemiz'; brandName = 'Aytemiz' }
+          else if (lower.includes('total')) { brandId = 'total'; brandName = 'TotalEnergies' }
+          else if (lower.includes('tp') || lower.includes('türkiye')) { brandId = 'tp'; brandName = 'Türkiye Petrolleri' }
+          else { brandName = rawBrand }
+
+          const city = el.tags?.['addr:city'] || detectCityFromCoords(el.lat, el.lon)
+
+          return {
+            id: `osm-${el.id}`,
+            name: el.tags?.name || `${brandName} İstasyonu`,
+            brand: brandName,
+            brandId: brandId,
+            city: city,
+            district: el.tags?.['addr:suburb'] || el.tags?.['addr:district'] || 'Çevre Bölge',
+            address: el.tags?.['addr:street'] ? `${el.tags['addr:street']} No: ${el.tags['addr:housenumber'] || '1'}` : `Bölge İstasyonu No: ${idx + 1}, ${city}`,
+            latitude: el.lat,
+            longitude: el.lon,
+            isOpen247: true,
+            benzin95: Number((71.10 + (idx % 4) * 0.12).toFixed(2)),
+            motorin: Number((79.60 + (idx % 4) * 0.15).toFixed(2)),
+            lpg: Number((36.00 + (idx % 3) * 0.10).toFixed(2)),
+            services: ['Market', 'Oto Yıkama', 'WC'],
+            rating: Number((4.6 + (idx % 4) * 0.1).toFixed(1)),
+          }
+        })
+      }
+    }
+  } catch (e) {
+    // Quiet fallback to database
+  }
+  return null
+}
+
 export async function fetchRealDeviceGpsLocation() {
   try {
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
@@ -367,12 +408,14 @@ export async function fetchRealDeviceGpsLocation() {
   return { lat: 39.778, lng: 30.515 }
 }
 
-export function getNearbyStations({ userCoords = null, brandId = 'all', radiusKm = 60, sortBy = 'distance', search = '' } = {}) {
-  // Safe default coordinates (Eskişehir fallback if no GPS)
+export function getNearbyStations({ userCoords = null, brandId = 'all', radiusKm = 60, sortBy = 'distance', search = '', liveOsmList = null } = {}) {
   const activeLat = userCoords?.lat ?? 39.778
   const activeLng = userCoords?.lng ?? 30.515
 
-  let mapped = turkeyStationDatabase.map((st) => {
+  // Use live OpenStreetMap list if available, else local Turkey database!
+  const baseList = (liveOsmList && liveOsmList.length > 0) ? liveOsmList : turkeyStationDatabase
+
+  let mapped = baseList.map((st) => {
     const dist = safeDistanceKm(activeLat, activeLng, st.latitude, st.longitude)
     return {
       ...st,

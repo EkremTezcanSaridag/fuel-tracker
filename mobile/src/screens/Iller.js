@@ -7,7 +7,7 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
-import { detectCityFromCoords, fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands, stationRadii } from '../services/nearbyStations'
+import { detectCityFromCoords, fetchLiveOsmGasStations, fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands, stationRadii } from '../services/nearbyStations'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -42,6 +42,7 @@ export default function Iller() {
   const [selectedBrandId, setSelectedBrandId] = useState('all')
   const [selectedRadiusKm, setSelectedRadiusKm] = useState(15)
   const [customGpsCoords, setCustomGpsCoords] = useState(null)
+  const [liveOsmList, setLiveOsmList] = useState(null)
   const [stationSort, setStationSort] = useState('distance') // 'distance' | 'price'
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
@@ -51,6 +52,11 @@ export default function Iller() {
       const coords = await fetchRealDeviceGpsLocation()
       if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
         setCustomGpsCoords(coords)
+        fetchLiveOsmGasStations(coords.lat, coords.lng).then((osmRes) => {
+          if (osmRes && osmRes.length > 0) {
+            setLiveOsmList(osmRes)
+          }
+        })
       }
     } catch (err) {
       // quiet fallback
@@ -63,7 +69,7 @@ export default function Iller() {
 
   useEffect(() => {
     if (viewMode === 'stations' && !customGpsCoords) {
-      handleGetLiveGps(true)
+      handleGetLiveGps()
     }
   }, [viewMode])
 
@@ -75,11 +81,12 @@ export default function Iller() {
         radiusKm: selectedRadiusKm,
         sortBy: stationSort,
         search: searchQuery,
+        liveOsmList: liveOsmList,
       })
     } catch (err) {
       return []
     }
-  }, [customGpsCoords, selectedBrandId, selectedRadiusKm, stationSort, searchQuery])
+  }, [customGpsCoords, selectedBrandId, selectedRadiusKm, stationSort, searchQuery, liveOsmList])
 
   async function handleToggleFavorite(cityName) {
     const updated = await toggleFavoriteCity(cityName)
