@@ -7,7 +7,7 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
-import { getNearbyStations, openStationDirections, stationBrands } from '../services/nearbyStations'
+import { getNearbyStations, openStationDirections, stationBrands, stationCities } from '../services/nearbyStations'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -40,6 +40,7 @@ export default function Iller() {
   const [favoriteCities, setFavoriteCities] = useState(defaultFavoriteCities)
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
   const [selectedBrandId, setSelectedBrandId] = useState('all')
+  const [selectedStationCity, setSelectedStationCity] = useState('Tüm Şehirler')
   const [stationSort, setStationSort] = useState('distance') // 'distance' | 'price'
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
@@ -278,7 +279,25 @@ export default function Iller() {
           </>
         ) : (
           <>
+            {/* Şehir Seçici Filtre Çipleri */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
+              {stationCities.map((cityName) => {
+                const isSelected = selectedStationCity === cityName
+                return (
+                  <Pressable
+                    key={cityName}
+                    onPress={() => setSelectedStationCity(cityName)}
+                    style={({ pressed }) => [styles.segment, isSelected && styles.segmentActive, pressed && styles.pressed]}
+                  >
+                    <MaterialCommunityIcons name="map-marker" size={14} color={isSelected ? colors.accent : colors.mutedSoft} />
+                    <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>{cityName}</Text>
+                  </Pressable>
+                )
+              })}
+            </ScrollView>
+
+            {/* Marka Seçici Filtre Çipleri */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.segmentRow, { marginTop: -4 }]}>
               {stationBrands.map((brand) => {
                 const isSelected = selectedBrandId === brand.id
                 return (
@@ -295,7 +314,9 @@ export default function Iller() {
             </ScrollView>
 
             <View style={styles.stationSortRow}>
-              <Text style={styles.listTitle}>En Yakın İstasyonlar</Text>
+              <Text style={styles.listTitle}>
+                {selectedStationCity === 'Tüm Şehirler' ? 'En Yakın İstasyonlar' : `${selectedStationCity} İstasyonları`}
+              </Text>
               <View style={styles.sortTogglePill}>
                 <Pressable onPress={() => setStationSort('distance')} style={[styles.sortSubBtn, stationSort === 'distance' && styles.sortSubBtnActive]}>
                   <Text style={[styles.sortSubText, stationSort === 'distance' && styles.sortSubTextActive]}>📍 Mesafe</Text>
@@ -306,7 +327,7 @@ export default function Iller() {
               </View>
             </View>
 
-            {getNearbyStations({ brandId: selectedBrandId, sortBy: stationSort, search: searchQuery }).map((st) => (
+            {getNearbyStations({ brandId: selectedBrandId, cityFilter: selectedStationCity, sortBy: stationSort, search: searchQuery }).map((st) => (
               <View key={st.id} style={styles.stationCard}>
                 <View style={styles.stationTopRow}>
                   <View style={styles.stationBrandBadge}>

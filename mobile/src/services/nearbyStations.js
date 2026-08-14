@@ -1,7 +1,7 @@
 import { Linking } from 'react-native'
 
 export const stationBrands = [
-  { id: 'all', name: 'Tümü', icon: 'gas-station' },
+  { id: 'all', name: 'Tüm Markalar', icon: 'gas-station' },
   { id: 'shell', name: 'Shell', color: '#FFD700', icon: 'shell' },
   { id: 'opet', name: 'Opet', color: '#00529B', icon: 'alpha-o-circle' },
   { id: 'po', name: 'Petrol Ofisi', color: '#E30613', icon: 'alpha-p-circle' },
@@ -10,9 +10,12 @@ export const stationBrands = [
   { id: 'tp', name: 'Türkiye Petrolleri', color: '#E30613', icon: 'alpha-t-box' },
 ]
 
+export const stationCities = ['Tüm Şehirler', 'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Eskişehir', 'Gaziantep']
+
 export const mockStations = [
+  // İstanbul
   {
-    id: 'st-1',
+    id: 'st-ist-1',
     name: 'Opet Kadıköy Rıhtım',
     brand: 'Opet',
     brandId: 'opet',
@@ -30,7 +33,7 @@ export const mockStations = [
     rating: 4.8,
   },
   {
-    id: 'st-2',
+    id: 'st-ist-2',
     name: 'Shell Ataşehir Barbaros',
     brand: 'Shell',
     brandId: 'shell',
@@ -48,7 +51,7 @@ export const mockStations = [
     rating: 4.9,
   },
   {
-    id: 'st-3',
+    id: 'st-ist-3',
     name: 'Petrol Ofisi Üsküdar Sahil',
     brand: 'Petrol Ofisi',
     brandId: 'po',
@@ -66,7 +69,7 @@ export const mockStations = [
     rating: 4.7,
   },
   {
-    id: 'st-4',
+    id: 'st-ist-4',
     name: 'Aytemiz Maltepe E-5',
     brand: 'Aytemiz',
     brandId: 'aytemiz',
@@ -84,7 +87,7 @@ export const mockStations = [
     rating: 4.6,
   },
   {
-    id: 'st-5',
+    id: 'st-ist-5',
     name: 'TotalEnergies Beşiktaş Meydan',
     brand: 'TotalEnergies',
     brandId: 'total',
@@ -101,28 +104,148 @@ export const mockStations = [
     services: ['Bonjour Market', 'Kahve', 'Elektrikli Şarj'],
     rating: 4.8,
   },
+
+  // Ankara
   {
-    id: 'st-6',
-    name: 'TP Petrolleri Çankaya Eskişehir Yolu',
-    brand: 'Türkiye Petrolleri',
-    brandId: 'tp',
+    id: 'st-ank-1',
+    name: 'Shell Çankaya Eskişehir Yolu',
+    brand: 'Shell',
+    brandId: 'shell',
     city: 'Ankara',
     district: 'Çankaya',
-    address: 'Mustafa Kemal Mah. Dumlupınar Bulvarı No: 150, Çankaya / Ankara',
+    address: 'Mustafa Kemal Mah. Dumlupınar Bulvarı No: 120, Çankaya / Ankara',
     latitude: 39.9082,
     longitude: 32.7845,
-    distanceKm: 1.9,
+    distanceKm: 0.9,
     isOpen247: true,
-    benzin95: 71.10,
-    motorin: 79.60,
-    lpg: 36.05,
-    services: ['TP Market', 'Oto Yıkama', 'Mescit'],
+    benzin95: 71.20,
+    motorin: 79.70,
+    lpg: 36.15,
+    services: ['Shell Select', 'Oto Yıkama', 'WC', 'Kahve'],
+    rating: 4.9,
+  },
+  {
+    id: 'st-ank-2',
+    name: 'Opet Kızılay Atatürk Bulvarı',
+    brand: 'Opet',
+    brandId: 'opet',
+    city: 'Ankara',
+    district: 'Çankaya',
+    address: 'Kızılay Mah. Atatürk Bulvarı No: 85, Çankaya / Ankara',
+    latitude: 39.9208,
+    longitude: 32.8541,
+    distanceKm: 1.5,
+    isOpen247: true,
+    benzin95: 71.28,
+    motorin: 79.78,
+    lpg: 36.22,
+    services: ['Opet Market', 'Mescit', 'Hızlı Şarj'],
+    rating: 4.8,
+  },
+  {
+    id: 'st-ank-3',
+    name: 'Petrol Ofisi Yenimahalle Emniyet',
+    brand: 'Petrol Ofisi',
+    brandId: 'po',
+    city: 'Ankara',
+    district: 'Yenimahalle',
+    address: 'Emniyet Mah. Alparslan Türkeş Cad. No: 40, Yenimahalle / Ankara',
+    latitude: 39.9385,
+    longitude: 32.8122,
+    distanceKm: 2.8,
+    isOpen247: true,
+    benzin95: 71.12,
+    motorin: 79.62,
+    lpg: 36.08,
+    services: ['PO Market', 'Oto Yıkama', 'Hava/Su'],
     rating: 4.7,
+  },
+
+  // İzmir
+  {
+    id: 'st-izmas-1',
+    name: 'Opet Alsancak Liman',
+    brand: 'Opet',
+    brandId: 'opet',
+    city: 'İzmir',
+    district: 'Konak',
+    address: 'Alsancak Mah. Liman Cad. No: 12, Konak / İzmir',
+    latitude: 38.4382,
+    longitude: 27.1419,
+    distanceKm: 1.1,
+    isOpen247: true,
+    benzin95: 71.22,
+    motorin: 79.72,
+    lpg: 36.18,
+    services: ['Opet Market', 'Oto Yıkama', 'WC'],
+    rating: 4.8,
+  },
+  {
+    id: 'st-izmas-2',
+    name: 'Shell Bornova Ege Üniversitesi',
+    brand: 'Shell',
+    brandId: 'shell',
+    city: 'İzmir',
+    district: 'Bornova',
+    address: 'Kazımdirik Mah. Ankara Cad. No: 145, Bornova / İzmir',
+    latitude: 38.4601,
+    longitude: 27.2154,
+    distanceKm: 2.3,
+    isOpen247: true,
+    benzin95: 71.19,
+    motorin: 79.69,
+    lpg: 36.12,
+    services: ['Select Market', 'Kahve', 'Hızlı Şarj'],
+    rating: 4.9,
+  },
+
+  // Bursa
+  {
+    id: 'st-brs-1',
+    name: 'Petrol Ofisi Nilüfer İzmir Yolu',
+    brand: 'Petrol Ofisi',
+    brandId: 'po',
+    city: 'Bursa',
+    district: 'Nilüfer',
+    address: 'Odunluk Mah. İzmir Yolu Cad. No: 80, Nilüfer / Bursa',
+    latitude: 40.2014,
+    longitude: 28.9812,
+    distanceKm: 1.2,
+    isOpen247: true,
+    benzin95: 71.15,
+    motorin: 79.65,
+    lpg: 36.10,
+    services: ['PO Market', 'Yıkama', 'Mescit'],
+    rating: 4.7,
+  },
+
+  // Antalya
+  {
+    id: 'st-ant-1',
+    name: 'Shell Muratpaşa 100. Yıl',
+    brand: 'Shell',
+    brandId: 'shell',
+    city: 'Antalya',
+    district: 'Muratpaşa',
+    address: 'Meltem Mah. 100. Yıl Bulvarı No: 90, Muratpaşa / Antalya',
+    latitude: 36.8864,
+    longitude: 30.6821,
+    distanceKm: 0.9,
+    isOpen247: true,
+    benzin95: 71.24,
+    motorin: 79.74,
+    lpg: 36.16,
+    services: ['Shell Select', 'Oto Yıkama', 'WC'],
+    rating: 4.8,
   },
 ]
 
-export function getNearbyStations({ brandId = 'all', sortBy = 'distance', search = '' } = {}) {
+export function getNearbyStations({ brandId = 'all', cityFilter = 'Tüm Şehirler', sortBy = 'distance', search = '' } = {}) {
   let filtered = [...mockStations]
+
+  if (cityFilter && cityFilter !== 'Tüm Şehirler') {
+    filtered = filtered.filter((s) => s.city.toLowerCase() === cityFilter.toLowerCase())
+  }
 
   if (brandId && brandId !== 'all') {
     filtered = filtered.filter((s) => s.brandId === brandId)
