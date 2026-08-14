@@ -6,6 +6,7 @@ import { Pressable, RefreshControl, ScrollView, View, Text, StyleSheet, useWindo
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { defaultFavoriteCities, loadFavoriteCities } from '../services/favoriteCities'
+import { defaultAlerts, evaluateCustomAlerts, loadCustomAlerts } from '../services/customAlerts'
 
 const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 const fuelSignalIcons = {
@@ -97,6 +98,7 @@ export default function AnaSayfa() {
   const { width } = useWindowDimensions()
   const { data, refresh, refreshing } = useFuelData()
   const [favCities, setFavCities] = useState(defaultFavoriteCities)
+  const [userAlerts, setUserAlerts] = useState(defaultAlerts)
   const fuels = data.homeFuels
   const marketSignal = data.marketSignal
   const trendSeries = data.homeTrendSeries
@@ -104,7 +106,12 @@ export default function AnaSayfa() {
 
   useEffect(() => {
     loadFavoriteCities().then(setFavCities)
+    loadCustomAlerts().then(setUserAlerts)
   }, [])
+
+  const triggeredAlerts = useMemo(() => {
+    return evaluateCustomAlerts(userAlerts, data.prices, marketSignal)
+  }, [data.prices, marketSignal, userAlerts])
 
   const favoriteCityPrices = useMemo(() => {
     return favCities.map((cityName) => {
@@ -176,6 +183,18 @@ export default function AnaSayfa() {
             <Text style={styles.updateText}>{getUpdateLabel(data, refreshing)}</Text>
           </View>
         </View>
+
+        {triggeredAlerts.length > 0 ? (
+          <View style={styles.triggeredBanner}>
+            <View style={styles.triggeredBannerIcon}>
+              <MaterialCommunityIcons name="bell-ring" size={20} color="#FFD700" />
+            </View>
+            <View style={styles.triggeredBannerCopy}>
+              <Text style={styles.triggeredBannerTitle}>Fiyat Alarmı Tetiklendi!</Text>
+              <Text style={styles.triggeredBannerText}>{triggeredAlerts[0].message}</Text>
+            </View>
+          </View>
+        ) : null}
 
         {fuels.map((fuel) => (
           <View key={fuel.name} style={styles.card}>
@@ -1026,5 +1045,39 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 11,
     fontWeight: '900',
+  },
+  triggeredBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#382A00',
+    borderColor: '#FFD700',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 14,
+    ...shadows.soft,
+  },
+  triggeredBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#523E00',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  triggeredBannerCopy: {
+    flex: 1,
+  },
+  triggeredBannerTitle: {
+    color: '#FFD700',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  triggeredBannerText: {
+    color: '#FFF5C2',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
   },
 })
