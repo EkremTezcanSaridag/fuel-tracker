@@ -122,12 +122,34 @@ export default function Aracim() {
   const monthlyMaximum = Math.max(...monthlyExpenses.map((item) => item.total), 1)
   const currentMonthExpense = monthlyExpenses[monthlyExpenses.length - 1]?.total ?? 0
 
-  // Computed Unit Price for Receipt Modal
-  const computedReceiptPricePerLiter = useMemo(() => {
-    const amt = toNumber(receiptAmount)
-    const ltr = toNumber(receiptLiters)
-    return ltr > 0 ? amt / ltr : 0
-  }, [receiptAmount, receiptLiters])
+  function handleReceiptAmountChange(val) {
+    setReceiptAmount(val)
+    const numAmt = toNumber(val)
+    const activeFuelPrice = Number(selectedCity?.[receiptFuelKey]) || price
+    if (numAmt > 0 && activeFuelPrice > 0) {
+      setReceiptLiters((numAmt / activeFuelPrice).toFixed(2))
+    } else if (!val) {
+      setReceiptLiters('')
+    }
+  }
+
+  function handleReceiptLitersChange(val) {
+    setReceiptLiters(val)
+    const numLtr = toNumber(val)
+    const activeFuelPrice = Number(selectedCity?.[receiptFuelKey]) || price
+    if (numLtr > 0 && activeFuelPrice > 0 && !receiptAmount) {
+      setReceiptAmount((numLtr * activeFuelPrice).toFixed(2))
+    }
+  }
+
+  function handleReceiptFuelChange(fuelKey) {
+    setReceiptFuelKey(fuelKey)
+    const numAmt = toNumber(receiptAmount)
+    const activeFuelPrice = Number(selectedCity?.[fuelKey]) || price
+    if (numAmt > 0 && activeFuelPrice > 0) {
+      setReceiptLiters((numAmt / activeFuelPrice).toFixed(2))
+    }
+  }
 
   function updateProfile(field, value) {
     setProfile((current) => ({ ...current, [field]: value }))
@@ -380,7 +402,7 @@ export default function Aracim() {
                 {fuelTabs.map((fuel) => {
                   const selected = fuel.key === receiptFuelKey
                   return (
-                    <Pressable key={fuel.key} onPress={() => setReceiptFuelKey(fuel.key)} style={[styles.fuelOption, selected && styles.fuelOptionActive]}>
+                    <Pressable key={fuel.key} onPress={() => handleReceiptFuelChange(fuel.key)} style={[styles.fuelOption, selected && styles.fuelOptionActive]}>
                       <MaterialCommunityIcons name={fuel.icon} size={16} color={selected ? colors.bg : colors.mutedSoft} />
                       <Text style={[styles.fuelOptionText, selected && styles.fuelOptionTextActive]}>{fuel.label}</Text>
                     </Pressable>
@@ -392,14 +414,14 @@ export default function Aracim() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.fieldLabel}>Harcanan Tutar</Text>
                   <View style={styles.inputShell}>
-                    <TextInput value={receiptAmount} onChangeText={setReceiptAmount} keyboardType="decimal-pad" placeholder="1000" placeholderTextColor={colors.muted} style={styles.input} />
+                    <TextInput value={receiptAmount} onChangeText={handleReceiptAmountChange} keyboardType="decimal-pad" placeholder="1000" placeholderTextColor={colors.muted} style={styles.input} />
                     <Text style={styles.unit}>TL</Text>
                   </View>
                 </View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.fieldLabel}>Alınan Litre</Text>
                   <View style={styles.inputShell}>
-                    <TextInput value={receiptLiters} onChangeText={setReceiptLiters} keyboardType="decimal-pad" placeholder="13.8" placeholderTextColor={colors.muted} style={styles.input} />
+                    <TextInput value={receiptLiters} onChangeText={handleReceiptLitersChange} keyboardType="decimal-pad" placeholder="13.8" placeholderTextColor={colors.muted} style={styles.input} />
                     <Text style={styles.unit}>L</Text>
                   </View>
                 </View>
