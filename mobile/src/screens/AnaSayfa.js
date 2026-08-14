@@ -139,11 +139,12 @@ export default function AnaSayfa() {
     const diffPct = first > 0 ? (diff / first) * 100 : 0
 
     const items = vals.map((v, i) => {
-      const heightPct = Math.round(35 + ((v - min) / range) * 55)
+      const isFlat = max === min
+      const barHeight = isFlat ? 48 : Math.round(22 + ((v - min) / range) * 52)
       return {
         day: days[i] ?? `G${i + 1}`,
         value: v,
-        heightPct,
+        barHeight,
         isToday: i === vals.length - 1,
         isMin: v === min,
         isMax: v === max,
@@ -429,9 +430,9 @@ export default function AnaSayfa() {
                     style={[
                       styles.barFill,
                       {
-                        height: `${item.heightPct}%`,
+                        height: item.barHeight,
                         backgroundColor: currentChartSeries.color,
-                        opacity: item.isToday ? 1 : 0.65,
+                        opacity: item.isToday ? 1 : 0.7,
                       },
                       item.isToday && styles.barFillToday,
                     ]}
@@ -1064,17 +1065,16 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   barTrack: {
-    width: 14,
+    width: 18,
     height: 80,
     backgroundColor: colors.bgSoft,
-    borderRadius: 7,
+    borderRadius: 9,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
   barFill: {
     width: '100%',
-    borderTopLeftRadius: 7,
-    borderTopRightRadius: 7,
+    borderRadius: 9,
   },
   barFillToday: {
     shadowColor: colors.accent,
