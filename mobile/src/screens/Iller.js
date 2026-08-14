@@ -45,17 +45,14 @@ export default function Iller() {
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
 
-  async function handleGetLiveGps(silent = false) {
+  async function handleGetLiveGps() {
     try {
       const coords = await fetchRealDeviceGpsLocation()
-      setCustomGpsCoords(coords)
-      if (!silent) {
-        Alert.alert('GPS Konumu Alındı', `Canlı GPS konumunuz (${coords.lat.toFixed(2)}, ${coords.lng.toFixed(2)}) alındı. En yakın istasyonlar güncellendi!`)
+      if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
+        setCustomGpsCoords(coords)
       }
     } catch (err) {
-      if (!silent) {
-        Alert.alert('GPS Konumu', 'Konum izni alınamadı. İstasyonlar anlık yakınlık mesafenize göre otomatik sıralandı.')
-      }
+      // quiet fallback
     }
   }
 
