@@ -7,7 +7,7 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
-import { fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands, userLocations } from '../services/nearbyStations'
+import { fetchRealDeviceGpsLocation, getNearbyStations, openStationDirections, stationBrands } from '../services/nearbyStations'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -40,7 +40,6 @@ export default function Iller() {
   const [favoriteCities, setFavoriteCities] = useState(defaultFavoriteCities)
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
   const [selectedBrandId, setSelectedBrandId] = useState('all')
-  const [userLocId, setUserLocId] = useState('loc-ist')
   const [customGpsCoords, setCustomGpsCoords] = useState(null)
   const [stationSort, setStationSort] = useState('distance') // 'distance' | 'price'
   const selectedFuelKey = selectedFuel.key
@@ -290,38 +289,23 @@ export default function Iller() {
           </>
         ) : (
           <>
-            {/* Mevcut Konum Seçici Bar */}
-            <View style={styles.locationSelectorCard}>
-              <View style={styles.locationSelectorHeader}>
-                <View style={styles.locTitleGroup}>
-                  <MaterialCommunityIcons name="crosshairs-gps" size={16} color={colors.accent} />
-                  <Text style={styles.locationSelectorTitle}>Mevcut Konumunuz (GPS)</Text>
-                </View>
-                <Pressable onPress={handleGetLiveGps} style={({ pressed }) => [styles.liveGpsBtn, customGpsCoords && styles.liveGpsBtnActive, pressed && styles.pressed]}>
-                  <MaterialCommunityIcons name="crosshairs-gps" size={13} color={colors.bg} />
-                  <Text style={styles.liveGpsBtnText}>{customGpsCoords ? 'Canlı GPS Aktif' : 'GPS Al'}</Text>
-                </Pressable>
+            {/* Mevcut Konum GPS Kartı */}
+            <Pressable onPress={handleGetLiveGps} style={({ pressed }) => [styles.singleGpsCard, customGpsCoords && styles.singleGpsCardActive, pressed && styles.pressed]}>
+              <View style={[styles.singleGpsIconBox, customGpsCoords && styles.singleGpsIconBoxActive]}>
+                <MaterialCommunityIcons name="crosshairs-gps" size={20} color={customGpsCoords ? colors.bg : colors.accent} />
               </View>
-
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.locScroll}>
-                {userLocations.map((loc) => {
-                  const isActive = !customGpsCoords && userLocId === loc.id
-                  return (
-                    <Pressable
-                      key={loc.id}
-                      onPress={() => {
-                        setCustomGpsCoords(null)
-                        setUserLocId(loc.id)
-                      }}
-                      style={[styles.locChip, isActive && styles.locChipActive]}
-                    >
-                      <MaterialCommunityIcons name="navigation" size={12} color={isActive ? colors.bg : colors.accent} />
-                      <Text style={[styles.locChipText, isActive && styles.locChipTextActive]}>{loc.label}</Text>
-                    </Pressable>
-                  )
-                })}
-              </ScrollView>
-            </View>
+              <View style={styles.singleGpsCopy}>
+                <Text style={[styles.singleGpsTitle, customGpsCoords && styles.singleGpsTextActive]}>
+                  {customGpsCoords ? 'Canlı GPS Konumunuz Aktif' : 'Mevcut Konumumu Kullan (GPS)'}
+                </Text>
+                <Text style={[styles.singleGpsSubtitle, customGpsCoords && styles.singleGpsSubActive]}>
+                  {customGpsCoords
+                    ? `Enlem: ${customGpsCoords.lat.toFixed(2)} · Türkiye geneli en yakın istasyonlar`
+                    : 'Dokunarak canlı cihaz konumunuzdan en yakın istasyonları hesaplayın.'}
+                </Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color={customGpsCoords ? colors.bg : colors.mutedSoft} />
+            </Pressable>
 
             {/* Marka Seçici Filtre Çipleri */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
@@ -352,7 +336,7 @@ export default function Iller() {
               </View>
             </View>
 
-            {getNearbyStations({ customCoords: customGpsCoords, userLocationId: userLocId, brandId: selectedBrandId, sortBy: stationSort, search: searchQuery }).map((st) => (
+            {getNearbyStations({ userCoords: customGpsCoords, brandId: selectedBrandId, sortBy: stationSort, search: searchQuery }).map((st) => (
               <View key={st.id} style={styles.stationCard}>
                 <View style={styles.stationTopRow}>
                   <View style={styles.stationBrandBadge}>
@@ -754,75 +738,53 @@ const styles = StyleSheet.create({
     color: colors.bg,
     fontWeight: '900',
   },
-  locationSelectorCard: {
+  singleGpsCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    padding: 10,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
     ...shadows.soft,
   },
-  locationSelectorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  locTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  liveGpsBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  liveGpsBtnActive: {
-    backgroundColor: colors.accentDark,
-  },
-  liveGpsBtnText: {
-    color: colors.bg,
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  locationSelectorTitle: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  locScroll: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  locChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: colors.bgSoft,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 4,
-  },
-  locChipActive: {
+  singleGpsCardActive: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
-  locChipText: {
-    color: colors.mutedSoft,
-    fontSize: 11,
-    fontWeight: '700',
+  singleGpsIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: colors.bgSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
-  locChipTextActive: {
-    color: colors.bg,
+  singleGpsIconBoxActive: {
+    backgroundColor: colors.surfaceAlt,
+  },
+  singleGpsCopy: {
+    flex: 1,
+  },
+  singleGpsTitle: {
+    color: colors.text,
+    fontSize: 13,
     fontWeight: '900',
+  },
+  singleGpsTextActive: {
+    color: colors.bg,
+  },
+  singleGpsSubtitle: {
+    color: colors.mutedSoft,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  singleGpsSubActive: {
+    color: colors.bg,
+    opacity: 0.9,
   },
   stationSortRow: {
     flexDirection: 'row',

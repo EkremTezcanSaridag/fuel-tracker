@@ -10,16 +10,7 @@ export const stationBrands = [
   { id: 'tp', name: 'Türkiye Petrolleri', color: '#E30613', icon: 'alpha-t-box' },
 ]
 
-export const userLocations = [
-  { id: 'loc-ist', label: 'İstanbul - Kadıköy', lat: 40.9912, lng: 29.0254, city: 'İstanbul' },
-  { id: 'loc-ank', label: 'Ankara - Çankaya', lat: 39.9082, lng: 32.7845, city: 'Ankara' },
-  { id: 'loc-izm', label: 'İzmir - Konak/Alsancak', lat: 38.4382, lng: 27.1419, city: 'İzmir' },
-  { id: 'loc-brs', label: 'Bursa - Nilüfer', lat: 40.2014, lng: 28.9812, city: 'Bursa' },
-  { id: 'loc-ant', label: 'Antalya - Muratpaşa', lat: 36.8864, lng: 30.6821, city: 'Antalya' },
-  { id: 'loc-adn', label: 'Adana - Seyhan', lat: 37.0000, lng: 35.3213, city: 'Adana' },
-]
-
-export const mockStations = [
+export const allTurkeyStations = [
   // İstanbul
   {
     id: 'st-ist-1',
@@ -88,6 +79,23 @@ export const mockStations = [
     lpg: 35.95,
     services: ['ON/OFF Market', 'Yıkama', 'Mescit'],
     rating: 4.6,
+  },
+  {
+    id: 'st-ist-5',
+    name: 'TotalEnergies Beşiktaş Meydan',
+    brand: 'TotalEnergies',
+    brandId: 'total',
+    city: 'İstanbul',
+    district: 'Beşiktaş',
+    address: 'Sinanpaşa Mah. Barbaros Bulvarı No: 14, Beşiktaş / İstanbul',
+    latitude: 41.0422,
+    longitude: 29.0083,
+    isOpen247: true,
+    benzin95: 71.35,
+    motorin: 79.85,
+    lpg: 36.25,
+    services: ['Bonjour Market', 'Kahve', 'Elektrikli Şarj'],
+    rating: 4.8,
   },
 
   // Ankara
@@ -240,40 +248,31 @@ export function fetchRealDeviceGpsLocation() {
           })
         },
         (err) => reject(err),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 },
       )
     } else {
-      reject(new Error('GPS desteklenmiyor.'))
+      reject(new Error('GPS cihazınız tarafından desteklenmiyor.'))
     }
   })
 }
 
-export function getNearbyStations({ customCoords = null, userLocationId = 'loc-ist', brandId = 'all', sortBy = 'distance', search = '' } = {}) {
-  let activeLat = 40.9912
-  let activeLng = 29.0254
-  let activeCity = 'İstanbul'
+export function getNearbyStations({ userCoords = null, brandId = 'all', sortBy = 'distance', search = '' } = {}) {
+  // Default fallback coords (Kadıköy/İstanbul center)
+  const defaultLat = 40.9912
+  const defaultLng = 29.0254
 
-  if (customCoords && customCoords.lat && customCoords.lng) {
-    activeLat = customCoords.lat
-    activeLng = customCoords.lng
-    activeCity = ''
-  } else {
-    const activeLoc = userLocations.find((l) => l.id === userLocationId) ?? userLocations[0]
-    activeLat = activeLoc.lat
-    activeLng = activeLoc.lng
-    activeCity = activeLoc.city
-  }
+  const activeLat = userCoords?.lat ?? defaultLat
+  const activeLng = userCoords?.lng ?? defaultLng
 
-  let mapped = mockStations.map((st) => {
+  let mapped = allTurkeyStations.map((st) => {
     const dist = calculateDistanceKm(activeLat, activeLng, st.latitude, st.longitude)
     return {
       ...st,
       distanceKm: dist,
-      isSameCity: activeCity ? st.city.toLowerCase() === activeCity.toLowerCase() : true,
     }
   })
 
-  // Search filter
+  // Filter search
   if (search.trim()) {
     const q = search.toLowerCase().trim()
     mapped = mapped.filter(
@@ -290,16 +289,11 @@ export function getNearbyStations({ customCoords = null, userLocationId = 'loc-i
     mapped = mapped.filter((s) => s.brandId === brandId)
   }
 
-  // Sort
+  // Sort: closest distance first or cheapest price
   if (sortBy === 'price') {
     mapped.sort((a, b) => a.benzin95 - b.benzin95)
   } else {
-    mapped.sort((a, b) => {
-      if (activeCity && a.isSameCity !== b.isSameCity) {
-        return a.isSameCity ? -1 : 1
-      }
-      return a.distanceKm - b.distanceKm
-    })
+    mapped.sort((a, b) => a.distanceKm - b.distanceKm)
   }
 
   return mapped
