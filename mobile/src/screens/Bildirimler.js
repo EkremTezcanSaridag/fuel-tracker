@@ -327,14 +327,10 @@ export default function Bildirimler() {
         {/* Kişisel Fiyat Alarmları Paneli */}
         <View style={styles.panel}>
           <View style={styles.panelHeaderRow}>
-            <View>
+            <View style={styles.panelHeaderCopy}>
               <Text style={styles.panelTitle}>Kişisel Fiyat Alarmları</Text>
-              <Text style={styles.panelSubtitle}>Hedef eşiklere ulaşıldığında anında haberdar olursunuz.</Text>
+              <Text style={styles.panelSubtitle}>Hedef eşiklere ulaşıldığında anında bildirim alırsınız.</Text>
             </View>
-            <Pressable onPress={() => setNewAlertModalOpen(true)} style={({ pressed }) => [styles.addAlertBtn, pressed && styles.pressed]}>
-              <MaterialCommunityIcons name="bell-plus-outline" size={16} color={colors.bg} />
-              <Text style={styles.addAlertBtnText}>+ Ekle</Text>
-            </Pressable>
           </View>
 
           {customAlerts.map((alertItem, idx) => {
@@ -368,6 +364,11 @@ export default function Bildirimler() {
               </View>
             )
           })}
+
+          <Pressable onPress={() => setNewAlertModalOpen(true)} style={({ pressed }) => [styles.fullWidthAddAlertBtn, pressed && styles.pressed]}>
+            <MaterialCommunityIcons name="bell-plus-outline" size={18} color={colors.bg} />
+            <Text style={styles.fullWidthAddAlertBtnText}>+ Yeni Fiyat Alarmı Oluştur</Text>
+          </Pressable>
         </View>
 
         <View style={styles.panel}>
@@ -495,84 +496,6 @@ export default function Bildirimler() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
-  )
-}
-
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Uyarı Ayarları</Text>
-
-          {notificationRows.map((row, index) => (
-            <View key={row.key} style={[styles.row, index === 0 && styles.rowFirst]}>
-              <View style={styles.rowIcon}>
-                <MaterialCommunityIcons name={row.icon} size={18} color={colors.accent} />
-              </View>
-              <View style={styles.rowCopy}>
-                <Text style={styles.rowTitle}>{row.title}</Text>
-                <Text style={styles.rowDesc}>{row.desc}</Text>
-              </View>
-              <Switch
-                disabled={permissionBusy}
-                onValueChange={(value) => updateSetting(row.key, value)}
-                thumbColor={row.value ? colors.accent : '#D6DEE9'}
-                trackColor={{ false: '#25364F', true: colors.accentDark }}
-                value={row.value}
-              />
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.panel}>
-          <View style={styles.panelTop}>
-            <View>
-              <Text style={styles.panelTitle}>Sessiz Saatler</Text>
-              <Text style={styles.panelSubtitle}>Kritik olmayan bildirimleri duraklatır.</Text>
-            </View>
-            <Switch
-              onValueChange={(value) => updateSetting('quietHours', value)}
-              thumbColor={settings.quietHours ? colors.accent : '#D6DEE9'}
-              trackColor={{ false: '#25364F', true: colors.accentDark }}
-              value={settings.quietHours}
-            />
-          </View>
-
-          <View style={styles.timeRow}>
-            <View style={styles.timeChip}>
-              <MaterialCommunityIcons name="weather-night" size={15} color={colors.accent} />
-              <Text style={styles.timeText}>22:00</Text>
-            </View>
-            <View style={styles.timeLine} />
-            <View style={styles.timeChip}>
-              <MaterialCommunityIcons name="white-balance-sunny" size={15} color={colors.warning} />
-              <Text style={styles.timeText}>08:00</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Takip Edilenler</Text>
-
-          <Text style={styles.groupLabel}>Yakıt türleri</Text>
-          <View style={styles.chipRow}>
-            {fuelChips.map((item) => (
-              <View key={item} style={styles.chip}>
-                <Text style={styles.chipText}>{item}</Text>
-              </View>
-            ))}
-          </View>
-
-          <Text style={styles.groupLabel}>Öne çıkan iller</Text>
-          <View style={styles.chipRow}>
-            {cityChips.map((item) => (
-              <View key={item} style={styles.chipMuted}>
-                <MaterialCommunityIcons name="map-marker" size={12} color={colors.mutedSoft} />
-                <Text style={styles.chipMutedText}>{item}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -937,23 +860,25 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   panelHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  addAlertBtn: {
+  panelHeaderCopy: {
+    flex: 1,
+  },
+  fullWidthAddAlertBtn: {
     backgroundColor: colors.accent,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: 8,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+    ...shadows.soft,
   },
-  addAlertBtnText: {
+  fullWidthAddAlertBtnText: {
     color: colors.bg,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '900',
   },
   customAlertRow: {

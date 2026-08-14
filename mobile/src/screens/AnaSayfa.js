@@ -21,25 +21,20 @@ const signalToneIcons = {
 }
 
 const chartHeight = 118
-const chartDomain = { min: 20, max: 70 }
-const chartGuides = [
-  { label: '65 TL', top: 16 },
-  { label: '45 TL', top: 58 },
-  { label: '25 TL', top: 100 },
-]
 
-function buildPoints(values, chartWidth) {
-  const horizontalPadding = 6
-  const verticalPadding = 8
+function buildPoints(values, chartWidth, domain) {
+  const horizontalPadding = 12
+  const verticalPadding = 12
   const usableWidth = chartWidth - horizontalPadding * 2
   const usableHeight = chartHeight - verticalPadding * 2
-  const step = usableWidth / (values.length - 1)
+  const step = usableWidth / Math.max(values.length - 1, 1)
+  const min = domain?.min ?? 20
+  const max = domain?.max ?? 85
 
   return values.map((value, index) => ({
     x: horizontalPadding + index * step,
-    y:
-      verticalPadding +
-      ((chartDomain.max - value) / (chartDomain.max - chartDomain.min)) * usableHeight,
+    y: verticalPadding + ((max - value) / Math.max(max - min, 1)) * usableHeight,
+    value,
   }))
 }
 
@@ -125,19 +120,39 @@ export default function AnaSayfa() {
     })
   }, [data.prices, favCities])
 
-  const chartSeries = useMemo(
-    () =>
-      trendSeries.map((series) => {
-        const points = buildPoints(series.values, chartWidth)
+  const [selectedChartFuelKey, setSelectedChartFuelKey] = useState('Benzin')
 
-        return {
-          ...series,
-          points,
-          segments: buildSegments(points, series.strokeWidth),
-        }
-      }),
-    [chartWidth, trendSeries],
-  )
+  const currentChartSeries = useMemo(() => {
+    return trendSeries.find((s) => s.key === selectedChartFuelKey) ?? trendSeries[0] ?? { key: 'Benzin', color: colors.accent, values: [71.31, 71.31, 71.31, 71.31, 71.31, 71.31, 71.31] }
+  }, [selectedChartFuelKey, trendSeries])
+
+  const chartMetrics = useMemo(() => {
+    const vals = currentChartSeries.values ?? []
+    if (vals.length === 0) return { min: 0, max: 0, diff: 0, diffPct: 0, items: [] }
+
+    const min = Math.min(...vals)
+    const max = Math.max(...vals)
+    const range = Math.max(max - min, 0.4)
+    const first = vals[0]
+    const last = vals[vals.length - 1]
+    const diff = last - first
+    const diffPct = first > 0 ? (diff / first) * 100 : 0
+
+    const items = vals.map((v, i) => {
+      const isFlat = max === min
+      const barHeight = isFlat ? 48 : Math.round(22 + ((v - min) / range) * 52)
+      return {
+        day: days[i] ?? `G${i + 1}`,
+        value: v,
+        barHeight,
+        isToday: i === vals.length - 1,
+        isMin: v === min,
+        isMax: v === max,
+      }
+    })
+
+    return { min, max, diff, diffPct, items, last }
+  }, [currentChartSeries])
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -363,105 +378,89 @@ export default function AnaSayfa() {
           </ScrollView>
         </View>
 
-        <View style={styles.chartCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>7 Günlük Değişim</Text>
-            <MaterialCommunityIcons name="chart-line" size={17} color={colors.mutedSoft} />
+        {/* Modern 7 Günlük Fiyat Trendi Kartı */}
+        <View style={styles.modernTrendCard}>
+          <View style={styles.trendHeader}>
+            <View style={styles.trendHeaderLeft}>
+              <Text style={styles.trendTitle}>7 Günlük Fiyat Trendi</Text>
+              <Text style={styles.trendSubtitle}>Haftalık pompa değişim istatistikleri</Text>
+            </View>
+            <View style={[styles.trendBadge, chartMetrics.diff > 0 ? styles.trendBadgeUp : chartMetrics.diff < 0 ? styles.trendBadgeDown : styles.trendBadgeFlat]}>
+              <MaterialCommunityIcons
+                name={chartMetrics.diff > 0 ? 'trending-up' : chartMetrics.diff < 0 ? 'trending-down' : 'minus'}
+                size={14}
+                color={chartMetrics.diff > 0 ? colors.danger : chartMetrics.diff < 0 ? colors.accent : colors.muted}
+              />
+              <Text style={[styles.trendBadgeText, { color: chartMetrics.diff > 0 ? colors.danger : chartMetrics.diff < 0 ? colors.accent : colors.muted }]}>
+                {chartMetrics.diff > 0 ? `+${chartMetrics.diff.toFixed(2)} ₺` : chartMetrics.diff < 0 ? `${chartMetrics.diff.toFixed(2)} ₺` : 'Sabit'}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.chartArea}>
-            <View style={[styles.chartPlot, { width: chartWidth, height: chartHeight }]}>
-              <View style={styles.chartBackdropTop} />
-              <View style={styles.chartBackdropBottom} />
+          {/* Segmented Fuel Picker */}
+          <View style={styles.segmentedRow}>
+            {[
+              { key: 'Benzin', label: 'Benzin 95', color: colors.accent },
+              { key: 'Motorin', label: 'Motorin', color: colors.info },
+              { key: 'LPG', label: 'LPG', color: colors.warning },
+            ].map((fuel) => {
+              const isActive = selectedChartFuelKey === fuel.key
+              return (
+                <Pressable
+                  key={fuel.key}
+                  onPress={() => setSelectedChartFuelKey(fuel.key)}
+                  style={[styles.segmentBtn, isActive && { backgroundColor: colors.surfaceAlt, borderColor: fuel.color }]}
+                >
+                  <View style={[styles.segmentDot, { backgroundColor: fuel.color }]} />
+                  <Text style={[styles.segmentText, isActive && { color: colors.text, fontWeight: '900' }]}>{fuel.label}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
 
-              {days.map((day, index) => (
-                <View
-                  key={`${day}-guide`}
-                  style={[
-                    styles.verticalGridLine,
-                    {
-                      left: guideLeft(index, days.length, chartWidth, 6),
-                    },
-                  ]}
-                />
-              ))}
-
-              {chartGuides.map((guide) => (
-                <View key={guide.label} style={[styles.gridGuide, { top: guide.top }]}>
-                  <View style={styles.gridLine} />
-                  <Text style={styles.gridLabel}>{guide.label}</Text>
-                </View>
-              ))}
-
-              {chartSeries.map((series) => (
-                <View key={series.key} style={styles.lineLayer}>
-                  {series.segments.map((segment, index) => (
-                    <Fragment key={`${series.key}-${index}`}>
-                      <View
-                        style={[
-                          styles.lineSegmentGlow,
-                          {
-                            backgroundColor: series.color,
-                            left: segment.left,
-                            top: segment.top - 2,
-                            transform: [{ rotate: `${segment.angle}deg` }],
-                            width: segment.width,
-                          },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          styles.lineSegment,
-                          {
-                            backgroundColor: series.color,
-                            height: series.strokeWidth,
-                            left: segment.left,
-                            opacity: series.opacity,
-                            top: segment.top,
-                            transform: [{ rotate: `${segment.angle}deg` }],
-                            width: segment.width,
-                          },
-                        ]}
-                      />
-                    </Fragment>
-                  ))}
-
-                  {series.points.map((point, index) => (
-                    <View
-                      key={`${series.key}-point-${index}`}
-                      style={[
-                        index === series.points.length - 1 ? styles.chartPointActive : styles.chartPoint,
-                        {
-                          backgroundColor: series.key === 'Motorin' ? series.color : colors.bg,
-                          borderColor: series.color,
-                          left: point.x - (index === series.points.length - 1 ? 5 : 3),
-                          opacity: series.opacity,
-                          top: point.y - (index === series.points.length - 1 ? 5 : 3),
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-              ))}
-            </View>
-
-            <View style={[styles.dayRow, { width: chartWidth }]}>
-              {days.map((day) => (
-                <Text key={day} style={styles.dayLabel}>
-                  {day}
+          {/* Modern Visual Bar Chart Container */}
+          <View style={styles.barGraphBox}>
+            {chartMetrics.items.map((item) => (
+              <View key={item.day} style={styles.barColumn}>
+                <Text style={[styles.barValText, item.isToday && styles.barValToday]}>
+                  {item.value ? `${item.value.toFixed(1)}` : ''}
                 </Text>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.legendRow}>
-            {trendSeries.map((item) => (
-              <View key={item.key} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                <Text style={styles.legendText}>{item.key}</Text>
-                <Text style={styles.legendValue}>{formatLegendValue(item.values)}</Text>
+                <View style={styles.barTrack}>
+                  <View
+                    style={[
+                      styles.barFill,
+                      {
+                        height: item.barHeight,
+                        backgroundColor: currentChartSeries.color,
+                        opacity: item.isToday ? 1 : 0.7,
+                      },
+                      item.isToday && styles.barFillToday,
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.barDayText, item.isToday && styles.barDayToday]}>{item.day}</Text>
               </View>
             ))}
+          </View>
+
+          {/* Clean 3-Metric Summary Footer */}
+          <View style={styles.trendSummaryRow}>
+            <View style={styles.trendMetricTile}>
+              <Text style={styles.trendMetricLabel}>En Düşük</Text>
+              <Text style={styles.trendMetricVal}>{chartMetrics.min ? `${chartMetrics.min.toFixed(2)} ₺` : '--'}</Text>
+            </View>
+            <View style={styles.trendMetricDivider} />
+            <View style={styles.trendMetricTile}>
+              <Text style={styles.trendMetricLabel}>En Yüksek</Text>
+              <Text style={styles.trendMetricVal}>{chartMetrics.max ? `${chartMetrics.max.toFixed(2)} ₺` : '--'}</Text>
+            </View>
+            <View style={styles.trendMetricDivider} />
+            <View style={styles.trendMetricTile}>
+              <Text style={styles.trendMetricLabel}>Son Fiyat</Text>
+              <Text style={[styles.trendMetricVal, { color: currentChartSeries.color }]}>
+                {chartMetrics.last ? `${chartMetrics.last.toFixed(2)} ₺` : '--'}
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -967,11 +966,213 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 12,
   },
+  modernTrendCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+    ...shadows.card,
+  },
+  trendHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  trendHeaderLeft: {
+    flex: 1,
+  },
+  trendTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  trendSubtitle: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  trendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: colors.bgSoft,
+    gap: 4,
+  },
+  trendBadgeUp: { backgroundColor: colors.dangerDark },
+  trendBadgeDown: { backgroundColor: colors.accentDark },
+  trendBadgeFlat: { backgroundColor: colors.bgSoft },
+  trendBadgeText: { fontSize: 11, fontWeight: '900' },
+
+  segmentedRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 14,
+  },
+  segmentBtn: {
+    flex: 1,
+    height: 34,
+    borderRadius: 7,
+    backgroundColor: colors.bgSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  segmentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  segmentText: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  barGraphBox: {
+    flexDirection: 'row',
+    height: 125,
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    paddingBottom: 4,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  barColumn: {
+    flex: 1,
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  barValText: {
+    color: colors.muted,
+    fontSize: 9,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  barValToday: {
+    color: colors.text,
+    fontWeight: '900',
+  },
+  barTrack: {
+    width: 18,
+    height: 80,
+    backgroundColor: colors.bgSoft,
+    borderRadius: 9,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  barFill: {
+    width: '100%',
+    borderRadius: 9,
+  },
+  barFillToday: {
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  barDayText: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  barDayToday: {
+    color: colors.accent,
+    fontWeight: '900',
+  },
+
+  trendSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.bgSoft,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  trendMetricTile: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  trendMetricLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  trendMetricVal: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  trendMetricDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: colors.border,
+  },
+  chartFilterRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 12,
+  },
+  chartFilterChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: colors.bgSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chartFilterChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  chartFilterChipText: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  chartFilterChipTextActive: {
+    color: colors.bg,
+    fontWeight: '900',
+  },
+  chartTooltipBadge: {
+    position: 'absolute',
+    backgroundColor: colors.accent,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    ...shadows.card,
+  },
+  chartTooltipText: {
+    color: colors.bg,
+    fontSize: 9,
+    fontWeight: '900',
+  },
   legendItem: {
     alignItems: 'center',
     flexDirection: 'row',
     marginHorizontal: 7,
     marginBottom: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  legendItemActive: {
+    backgroundColor: colors.bgSoft,
   },
   legendDot: {
     borderRadius: 999,

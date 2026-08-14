@@ -7,6 +7,7 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
+import { getNearbyStations, openStationDirections, stationBrands } from '../services/nearbyStations'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -33,10 +34,13 @@ function normalizeSearch(value) {
 
 export default function Iller() {
   const { data, refresh, refreshing } = useFuelData()
+  const [viewMode, setViewMode] = useState('cities') // 'cities' | 'stations'
   const [selectedFuel, setSelectedFuel] = useState(fuelTabs[0])
   const [searchQuery, setSearchQuery] = useState('')
   const [favoriteCities, setFavoriteCities] = useState(defaultFavoriteCities)
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
+  const [selectedBrandId, setSelectedBrandId] = useState('all')
+  const [stationSort, setStationSort] = useState('distance') // 'distance' | 'price'
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
 
@@ -145,112 +149,211 @@ export default function Iller() {
           </View>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
+        <View style={styles.viewModeToggleRow}>
           <Pressable
-            onPress={() => setShowOnlyFavorites((prev) => !prev)}
-            style={({ pressed }) => [styles.segment, showOnlyFavorites && styles.favoriteSegmentActive, pressed && styles.pressed]}
+            onPress={() => setViewMode('cities')}
+            style={[styles.viewModeBtn, viewMode === 'cities' && styles.viewModeBtnActive]}
           >
-            <MaterialCommunityIcons
-              name={showOnlyFavorites ? 'heart' : 'heart-outline'}
-              size={14}
-              color={showOnlyFavorites ? '#FF4D4D' : colors.mutedSoft}
-            />
-            <Text style={[styles.segmentText, showOnlyFavorites && { color: '#FF4D4D' }]}>Favoriler ({favoriteCities.length})</Text>
+            <MaterialCommunityIcons name="city-variant-outline" size={16} color={viewMode === 'cities' ? colors.bg : colors.mutedSoft} />
+            <Text style={[styles.viewModeBtnText, viewMode === 'cities' && styles.viewModeBtnTextActive]}>İl Fiyatları</Text>
           </Pressable>
 
-          {fuelTabs.map((item) => {
-            const selected = item.key === selectedFuel.key
+          <Pressable
+            onPress={() => setViewMode('stations')}
+            style={[styles.viewModeBtn, viewMode === 'stations' && styles.viewModeBtnActive]}
+          >
+            <MaterialCommunityIcons name="gas-station-outline" size={16} color={viewMode === 'stations' ? colors.bg : colors.mutedSoft} />
+            <Text style={[styles.viewModeBtnText, viewMode === 'stations' && styles.viewModeBtnTextActive]}>En Yakın İstasyonlar</Text>
+          </Pressable>
+        </View>
 
-            return (
+        {viewMode === 'cities' ? (
+          <>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
               <Pressable
-                key={item.key}
-                onPress={() => setSelectedFuel(item)}
-                style={({ pressed }) => [styles.segment, selected && styles.segmentActive, pressed && styles.pressed]}
+                onPress={() => setShowOnlyFavorites((prev) => !prev)}
+                style={({ pressed }) => [styles.segment, showOnlyFavorites && styles.favoriteSegmentActive, pressed && styles.pressed]}
               >
                 <MaterialCommunityIcons
-                  name={item.icon}
+                  name={showOnlyFavorites ? 'heart' : 'heart-outline'}
                   size={14}
-                  color={selected ? colors.accent : colors.mutedSoft}
+                  color={showOnlyFavorites ? '#FF4D4D' : colors.mutedSoft}
                 />
-                <Text style={[styles.segmentText, selected && styles.segmentTextActive]}>{item.label}</Text>
+                <Text style={[styles.segmentText, showOnlyFavorites && { color: '#FF4D4D' }]}>Favoriler ({favoriteCities.length})</Text>
               </Pressable>
-            )
-          })}
-        </ScrollView>
 
-        <View style={styles.insightCard}>
-          <View style={styles.insightIcon}>
-            <MaterialCommunityIcons name="trending-down" size={20} color={colors.accent} />
-          </View>
-          <View style={styles.insightCopy}>
-            <Text style={styles.insightTitle}>
-              {bestCity ? `En uygun şehir ${bestCity.name}` : 'Sonuç bulunamadı'}
-            </Text>
-            <Text style={styles.insightDesc}>
-              {bestCity
-                ? `Bugünkü listede en düşük ${selectedFuelTitle} fiyatı.`
-                : 'Aramayı temizleyip tekrar deneyebilirsiniz.'}
-            </Text>
-          </View>
-          <Text style={styles.insightPrice}>{bestCity?.price ?? '--'}</Text>
-        </View>
+              {fuelTabs.map((item) => {
+                const selected = item.key === selectedFuel.key
 
-        <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>{showOnlyFavorites ? 'Favori Şehirler' : 'Şehir Listesi'}</Text>
-          <Text style={styles.listMeta}>{selectedFuelTitle}</Text>
-        </View>
-
-        {cities.length === 0 && (
-          <View style={styles.emptyCard}>
-            <MaterialCommunityIcons name="map-search-outline" size={28} color={colors.accent} />
-            <Text style={styles.emptyTitle}>{showOnlyFavorites ? 'Favori iliniz yok' : 'İl bulunamadı'}</Text>
-            <Text style={styles.emptyText}>{showOnlyFavorites ? 'Kalp simgesine dokunarak il ekleyin.' : 'Arama metnini kısaltarak tekrar deneyin.'}</Text>
-          </View>
-        )}
-
-        {cities.map((city, index) => {
-          const trendUp = city.change.startsWith('+')
-
-          return (
-            <View key={city.name} style={styles.cityCard}>
-              <View style={styles.rankBox}>
-                <Text style={styles.rankText}>{index + 1}</Text>
-              </View>
-
-              <View style={styles.cityInfo}>
-                <View style={styles.cityNameRow}>
-                  <Text style={styles.cityName}>{city.name}</Text>
-                  <Pressable onPress={() => handleToggleFavorite(city.name)} style={styles.heartButton}>
+                return (
+                  <Pressable
+                    key={item.key}
+                    onPress={() => setSelectedFuel(item)}
+                    style={({ pressed }) => [styles.segment, selected && styles.segmentActive, pressed && styles.pressed]}
+                  >
                     <MaterialCommunityIcons
-                      name={city.isFavorite ? 'heart' : 'heart-outline'}
-                      size={18}
-                      color={city.isFavorite ? '#FF4D4D' : colors.muted}
+                      name={item.icon}
+                      size={14}
+                      color={selected ? colors.accent : colors.mutedSoft}
                     />
+                    <Text style={[styles.segmentText, selected && styles.segmentTextActive]}>{item.label}</Text>
                   </Pressable>
-                </View>
-                <View style={styles.cityMetaRow}>
-                  <MaterialCommunityIcons name="storefront-outline" size={12} color={colors.muted} />
-                  <Text style={styles.cityMeta}>{city.stations}</Text>
-                </View>
-                <View style={styles.cityChangeWrap}>
-                  <MaterialCommunityIcons
-                    name={trendUp ? 'arrow-up-bold' : 'arrow-down-bold'}
-                    size={12}
-                    color={trendUp ? colors.warning : colors.accent}
-                  />
-                  <Text style={[styles.cityChange, trendUp ? styles.cityChangeUp : styles.cityChangeDown]}>
-                    {city.change} ort. fiyattan
-                  </Text>
-                </View>
-              </View>
+                )
+              })}
+            </ScrollView>
 
-              <View style={styles.priceWrap}>
-                <Text style={styles.price}>{city.price}</Text>
-                <Text style={styles.priceUnit}>/ litre</Text>
+            <View style={styles.insightCard}>
+              <View style={styles.insightIcon}>
+                <MaterialCommunityIcons name="trending-down" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.insightCopy}>
+                <Text style={styles.insightTitle}>
+                  {bestCity ? `En uygun şehir ${bestCity.name}` : 'Sonuç bulunamadı'}
+                </Text>
+                <Text style={styles.insightDesc}>
+                  {bestCity
+                    ? `Bugünkü listede en düşük ${selectedFuelTitle} fiyatı.`
+                    : 'Aramayı temizleyip tekrar deneyebilirsiniz.'}
+                </Text>
+              </View>
+              <Text style={styles.insightPrice}>{bestCity?.price ?? '--'}</Text>
+            </View>
+
+            <View style={styles.listHeader}>
+              <Text style={styles.listTitle}>{showOnlyFavorites ? 'Favori Şehirler' : 'Şehir Listesi'}</Text>
+              <Text style={styles.listMeta}>{selectedFuelTitle}</Text>
+            </View>
+
+            {cities.length === 0 && (
+              <View style={styles.emptyCard}>
+                <MaterialCommunityIcons name="map-search-outline" size={28} color={colors.accent} />
+                <Text style={styles.emptyTitle}>{showOnlyFavorites ? 'Favori iliniz yok' : 'İl bulunamadı'}</Text>
+                <Text style={styles.emptyText}>{showOnlyFavorites ? 'Kalp simgesine dokunarak il ekleyin.' : 'Arama metnini kısaltarak tekrar deneyin.'}</Text>
+              </View>
+            )}
+
+            {cities.map((city, index) => {
+              const trendUp = city.change.startsWith('+')
+
+              return (
+                <View key={city.name} style={styles.cityCard}>
+                  <View style={styles.rankBox}>
+                    <Text style={styles.rankText}>{index + 1}</Text>
+                  </View>
+
+                  <View style={styles.cityInfo}>
+                    <View style={styles.cityNameRow}>
+                      <Text style={styles.cityName}>{city.name}</Text>
+                      <Pressable onPress={() => handleToggleFavorite(city.name)} style={styles.heartButton}>
+                        <MaterialCommunityIcons
+                          name={city.isFavorite ? 'heart' : 'heart-outline'}
+                          size={18}
+                          color={city.isFavorite ? '#FF4D4D' : colors.muted}
+                        />
+                      </Pressable>
+                    </View>
+                    <View style={styles.cityMetaRow}>
+                      <MaterialCommunityIcons name="storefront-outline" size={12} color={colors.muted} />
+                      <Text style={styles.cityMeta}>{city.stations}</Text>
+                    </View>
+                    <View style={styles.cityChangeWrap}>
+                      <MaterialCommunityIcons
+                        name={trendUp ? 'arrow-up-bold' : 'arrow-down-bold'}
+                        size={12}
+                        color={trendUp ? colors.warning : colors.accent}
+                      />
+                      <Text style={[styles.cityChange, trendUp ? styles.cityChangeUp : styles.cityChangeDown]}>
+                        {city.change} ort. fiyattan
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.priceWrap}>
+                    <Text style={styles.price}>{city.price}</Text>
+                    <Text style={styles.priceUnit}>/ litre</Text>
+                  </View>
+                </View>
+              )
+            })}
+          </>
+        ) : (
+          <>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
+              {stationBrands.map((brand) => {
+                const isSelected = selectedBrandId === brand.id
+                return (
+                  <Pressable
+                    key={brand.id}
+                    onPress={() => setSelectedBrandId(brand.id)}
+                    style={({ pressed }) => [styles.segment, isSelected && styles.segmentActive, pressed && styles.pressed]}
+                  >
+                    <MaterialCommunityIcons name={brand.icon} size={14} color={isSelected ? colors.accent : colors.mutedSoft} />
+                    <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>{brand.name}</Text>
+                  </Pressable>
+                )
+              })}
+            </ScrollView>
+
+            <View style={styles.stationSortRow}>
+              <Text style={styles.listTitle}>En Yakın İstasyonlar</Text>
+              <View style={styles.sortTogglePill}>
+                <Pressable onPress={() => setStationSort('distance')} style={[styles.sortSubBtn, stationSort === 'distance' && styles.sortSubBtnActive]}>
+                  <Text style={[styles.sortSubText, stationSort === 'distance' && styles.sortSubTextActive]}>📍 Mesafe</Text>
+                </Pressable>
+                <Pressable onPress={() => setStationSort('price')} style={[styles.sortSubBtn, stationSort === 'price' && styles.sortSubBtnActive]}>
+                  <Text style={[styles.sortSubText, stationSort === 'price' && styles.sortSubTextActive]}>💰 Ucuz</Text>
+                </Pressable>
               </View>
             </View>
-          )
-        })}
+
+            {getNearbyStations({ brandId: selectedBrandId, sortBy: stationSort, search: searchQuery }).map((st) => (
+              <View key={st.id} style={styles.stationCard}>
+                <View style={styles.stationTopRow}>
+                  <View style={styles.stationBrandBadge}>
+                    <MaterialCommunityIcons name="gas-station" size={15} color={colors.accent} />
+                    <Text style={styles.stationBrandText}>{st.brand}</Text>
+                  </View>
+                  <View style={styles.distanceChip}>
+                    <MaterialCommunityIcons name="navigation-variant" size={12} color={colors.accent} />
+                    <Text style={styles.distanceChipText}>{st.distanceKm} km yakında</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.stationName}>{st.name}</Text>
+                <Text style={styles.stationAddress}>{st.address}</Text>
+
+                <View style={styles.stationPricesRow}>
+                  <View style={styles.stationPriceBox}>
+                    <Text style={styles.stFuelLabel}>Benzin 95</Text>
+                    <Text style={styles.stFuelVal}>{st.benzin95.toFixed(2)} ₺</Text>
+                  </View>
+                  <View style={styles.stationPriceBox}>
+                    <Text style={styles.stFuelLabel}>Motorin</Text>
+                    <Text style={styles.stFuelVal}>{st.motorin.toFixed(2)} ₺</Text>
+                  </View>
+                  <View style={styles.stationPriceBox}>
+                    <Text style={styles.stFuelLabel}>LPG</Text>
+                    <Text style={styles.stFuelVal}>{st.lpg.toFixed(2)} ₺</Text>
+                  </View>
+                </View>
+
+                <View style={styles.stationFooterRow}>
+                  <View style={styles.servicesChipRow}>
+                    {st.services.slice(0, 3).map((srv) => (
+                      <View key={srv} style={styles.srvBadge}>
+                        <Text style={styles.srvBadgeText}>{srv}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Pressable onPress={() => openStationDirections(st)} style={({ pressed }) => [styles.mapDirectionsBtn, pressed && styles.pressed]}>
+                    <MaterialCommunityIcons name="map-marker-path" size={15} color={colors.bg} />
+                    <Text style={styles.mapDirectionsBtnText}>Yol Tarifi</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
@@ -574,5 +677,177 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     marginTop: 3,
+  },
+  viewModeToggleRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgSoft,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 3,
+    marginBottom: 12,
+  },
+  viewModeBtn: {
+    flex: 1,
+    height: 36,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  viewModeBtnActive: {
+    backgroundColor: colors.accent,
+  },
+  viewModeBtnText: {
+    color: colors.mutedSoft,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  viewModeBtnTextActive: {
+    color: colors.bg,
+    fontWeight: '900',
+  },
+  stationSortRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  sortTogglePill: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgSoft,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 2,
+  },
+  sortSubBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  sortSubBtnActive: {
+    backgroundColor: colors.surfaceAlt,
+  },
+  sortSubText: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  sortSubTextActive: {
+    color: colors.accent,
+    fontWeight: '900',
+  },
+  stationCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 12,
+    ...shadows.card,
+  },
+  stationTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  stationBrandBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  stationBrandText: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  distanceChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgSoft,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    gap: 4,
+  },
+  distanceChipText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  stationName: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '900',
+    marginBottom: 2,
+  },
+  stationAddress: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  stationPricesRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgSoft,
+    borderRadius: 8,
+    padding: 8,
+    justifyContent: 'space-around',
+    marginBottom: 12,
+  },
+  stationPriceBox: {
+    alignItems: 'center',
+  },
+  stFuelLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  stFuelVal: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  stationFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  servicesChipRow: {
+    flexDirection: 'row',
+    gap: 4,
+    flex: 1,
+  },
+  srvBadge: {
+    backgroundColor: colors.bgSoft,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  srvBadgeText: {
+    color: colors.mutedSoft,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  mapDirectionsBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  mapDirectionsBtnText: {
+    color: colors.bg,
+    fontSize: 11,
+    fontWeight: '900',
   },
 })
