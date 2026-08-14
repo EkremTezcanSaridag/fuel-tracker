@@ -499,11 +499,6 @@ export default function Bildirimler() {
   )
 }
 
-      </ScrollView>
-    </SafeAreaView>
-  )
-}
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
