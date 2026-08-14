@@ -10,6 +10,33 @@ export const stationBrands = [
   { id: 'tp', name: 'Türkiye Petrolleri', color: '#E30613', icon: 'alpha-t-box' },
 ]
 
+export function detectCityFromCoords(lat, lng) {
+  if (!lat || !lng) return 'Eskişehir'
+
+  // Eskişehir (lat ~39.4-40.1, lng ~30.0-31.3)
+  if (lat >= 39.4 && lat <= 40.1 && lng >= 30.0 && lng <= 31.3) {
+    return 'Eskişehir'
+  }
+  // Ankara
+  if (lat >= 39.6 && lat <= 40.3 && lng >= 32.2 && lng <= 33.3) {
+    return 'Ankara'
+  }
+  // İstanbul
+  if (lat >= 40.7 && lat <= 41.4 && lng >= 28.4 && lng <= 29.6) {
+    return 'İstanbul'
+  }
+  // İzmir
+  if (lat >= 38.1 && lat <= 38.8 && lng >= 26.7 && lng <= 27.6) {
+    return 'İzmir'
+  }
+  // Bursa
+  if (lat >= 40.0 && lat <= 40.4 && lng >= 28.5 && lng <= 29.4) {
+    return 'Bursa'
+  }
+
+  return 'Eskişehir'
+}
+
 export const turkeyStationDatabase = [
   // --- ESKİŞEHİR ---
   {
