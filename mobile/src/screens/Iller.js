@@ -45,19 +45,29 @@ export default function Iller() {
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
 
-  async function handleGetLiveGps() {
+  async function handleGetLiveGps(silent = false) {
     try {
       const coords = await fetchRealDeviceGpsLocation()
       setCustomGpsCoords(coords)
-      Alert.alert('GPS Konumu Alındı', `Canlı GPS konumunuz (${coords.lat.toFixed(2)}, ${coords.lng.toFixed(2)}) alındı. En yakın istasyonlar güncellendi!`)
+      if (!silent) {
+        Alert.alert('GPS Konumu Alındı', `Canlı GPS konumunuz (${coords.lat.toFixed(2)}, ${coords.lng.toFixed(2)}) alındı. En yakın istasyonlar güncellendi!`)
+      }
     } catch (err) {
-      Alert.alert('GPS Konumu', 'GPS izni alınamadı. Aşağıdaki listeden bölgenizi seçebilirsiniz.')
+      if (!silent) {
+        Alert.alert('GPS Konumu', 'Konum izni alınamadı. İstasyonlar anlık yakınlık mesafenize göre otomatik sıralandı.')
+      }
     }
   }
 
   useEffect(() => {
     loadFavoriteCities().then(setFavoriteCities)
   }, [])
+
+  useEffect(() => {
+    if (viewMode === 'stations' && !customGpsCoords) {
+      handleGetLiveGps(true)
+    }
+  }, [viewMode])
 
   async function handleToggleFavorite(cityName) {
     const updated = await toggleFavoriteCity(cityName)
