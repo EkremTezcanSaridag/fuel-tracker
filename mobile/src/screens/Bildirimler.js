@@ -327,14 +327,10 @@ export default function Bildirimler() {
         {/* Kişisel Fiyat Alarmları Paneli */}
         <View style={styles.panel}>
           <View style={styles.panelHeaderRow}>
-            <View>
+            <View style={styles.panelHeaderCopy}>
               <Text style={styles.panelTitle}>Kişisel Fiyat Alarmları</Text>
-              <Text style={styles.panelSubtitle}>Hedef eşiklere ulaşıldığında anında haberdar olursunuz.</Text>
+              <Text style={styles.panelSubtitle}>Hedef eşiklere ulaşıldığında anında bildirim alırsınız.</Text>
             </View>
-            <Pressable onPress={() => setNewAlertModalOpen(true)} style={({ pressed }) => [styles.addAlertBtn, pressed && styles.pressed]}>
-              <MaterialCommunityIcons name="bell-plus-outline" size={16} color={colors.bg} />
-              <Text style={styles.addAlertBtnText}>+ Ekle</Text>
-            </Pressable>
           </View>
 
           {customAlerts.map((alertItem, idx) => {
@@ -368,6 +364,11 @@ export default function Bildirimler() {
               </View>
             )
           })}
+
+          <Pressable onPress={() => setNewAlertModalOpen(true)} style={({ pressed }) => [styles.fullWidthAddAlertBtn, pressed && styles.pressed]}>
+            <MaterialCommunityIcons name="bell-plus-outline" size={18} color={colors.bg} />
+            <Text style={styles.fullWidthAddAlertBtnText}>+ Yeni Fiyat Alarmı Oluştur</Text>
+          </Pressable>
         </View>
 
         <View style={styles.panel}>
@@ -859,23 +860,25 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   panelHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  addAlertBtn: {
+  panelHeaderCopy: {
+    flex: 1,
+  },
+  fullWidthAddAlertBtn: {
     backgroundColor: colors.accent,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: 8,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+    ...shadows.soft,
   },
-  addAlertBtnText: {
+  fullWidthAddAlertBtnText: {
     color: colors.bg,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '900',
   },
   customAlertRow: {
