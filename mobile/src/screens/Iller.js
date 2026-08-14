@@ -7,7 +7,7 @@ import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
 import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
-import { getNearbyStations, openStationDirections, stationBrands, stationCities } from '../services/nearbyStations'
+import { getNearbyStations, openStationDirections, stationBrands, userLocations } from '../services/nearbyStations'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -40,7 +40,7 @@ export default function Iller() {
   const [favoriteCities, setFavoriteCities] = useState(defaultFavoriteCities)
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
   const [selectedBrandId, setSelectedBrandId] = useState('all')
-  const [selectedStationCity, setSelectedStationCity] = useState('Tüm Şehirler')
+  const [userLocId, setUserLocId] = useState('loc-ist')
   const [stationSort, setStationSort] = useState('distance') // 'distance' | 'price'
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
@@ -279,25 +279,31 @@ export default function Iller() {
           </>
         ) : (
           <>
-            {/* Şehir Seçici Filtre Çipleri */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
-              {stationCities.map((cityName) => {
-                const isSelected = selectedStationCity === cityName
-                return (
-                  <Pressable
-                    key={cityName}
-                    onPress={() => setSelectedStationCity(cityName)}
-                    style={({ pressed }) => [styles.segment, isSelected && styles.segmentActive, pressed && styles.pressed]}
-                  >
-                    <MaterialCommunityIcons name="map-marker" size={14} color={isSelected ? colors.accent : colors.mutedSoft} />
-                    <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>{cityName}</Text>
-                  </Pressable>
-                )
-              })}
-            </ScrollView>
+            {/* Mevcut Konum Seçici Bar */}
+            <View style={styles.locationSelectorCard}>
+              <View style={styles.locationSelectorHeader}>
+                <MaterialCommunityIcons name="crosshairs-gps" size={16} color={colors.accent} />
+                <Text style={styles.locationSelectorTitle}>Mevcut Konumunuz (GPS Mesafesi)</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.locScroll}>
+                {userLocations.map((loc) => {
+                  const isActive = userLocId === loc.id
+                  return (
+                    <Pressable
+                      key={loc.id}
+                      onPress={() => setUserLocId(loc.id)}
+                      style={[styles.locChip, isActive && styles.locChipActive]}
+                    >
+                      <MaterialCommunityIcons name="navigation" size={12} color={isActive ? colors.bg : colors.accent} />
+                      <Text style={[styles.locChipText, isActive && styles.locChipTextActive]}>{loc.label}</Text>
+                    </Pressable>
+                  )
+                })}
+              </ScrollView>
+            </View>
 
             {/* Marka Seçici Filtre Çipleri */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.segmentRow, { marginTop: -4 }]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
               {stationBrands.map((brand) => {
                 const isSelected = selectedBrandId === brand.id
                 return (
@@ -314,9 +320,7 @@ export default function Iller() {
             </ScrollView>
 
             <View style={styles.stationSortRow}>
-              <Text style={styles.listTitle}>
-                {selectedStationCity === 'Tüm Şehirler' ? 'En Yakın İstasyonlar' : `${selectedStationCity} İstasyonları`}
-              </Text>
+              <Text style={styles.listTitle}>En Yakın İstasyonlar</Text>
               <View style={styles.sortTogglePill}>
                 <Pressable onPress={() => setStationSort('distance')} style={[styles.sortSubBtn, stationSort === 'distance' && styles.sortSubBtnActive]}>
                   <Text style={[styles.sortSubText, stationSort === 'distance' && styles.sortSubTextActive]}>📍 Mesafe</Text>
@@ -327,7 +331,7 @@ export default function Iller() {
               </View>
             </View>
 
-            {getNearbyStations({ brandId: selectedBrandId, cityFilter: selectedStationCity, sortBy: stationSort, search: searchQuery }).map((st) => (
+            {getNearbyStations({ userLocationId: userLocId, brandId: selectedBrandId, sortBy: stationSort, search: searchQuery }).map((st) => (
               <View key={st.id} style={styles.stationCard}>
                 <View style={styles.stationTopRow}>
                   <View style={styles.stationBrandBadge}>
@@ -726,6 +730,54 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   viewModeBtnTextActive: {
+    color: colors.bg,
+    fontWeight: '900',
+  },
+  locationSelectorCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 12,
+    ...shadows.soft,
+  },
+  locationSelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  locationSelectorTitle: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  locScroll: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  locChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: colors.bgSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 4,
+  },
+  locChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  locChipText: {
+    color: colors.mutedSoft,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  locChipTextActive: {
     color: colors.bg,
     fontWeight: '900',
   },

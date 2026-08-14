@@ -10,7 +10,14 @@ export const stationBrands = [
   { id: 'tp', name: 'Türkiye Petrolleri', color: '#E30613', icon: 'alpha-t-box' },
 ]
 
-export const stationCities = ['Tüm Şehirler', 'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Eskişehir', 'Gaziantep']
+export const userLocations = [
+  { id: 'loc-ist', label: 'İstanbul - Kadıköy', lat: 40.9912, lng: 29.0254, city: 'İstanbul' },
+  { id: 'loc-ank', label: 'Ankara - Çankaya', lat: 39.9082, lng: 32.7845, city: 'Ankara' },
+  { id: 'loc-izm', label: 'İzmir - Konak/Alsancak', lat: 38.4382, lng: 27.1419, city: 'İzmir' },
+  { id: 'loc-brs', label: 'Bursa - Nilüfer', lat: 40.2014, lng: 28.9812, city: 'Bursa' },
+  { id: 'loc-ant', label: 'Antalya - Muratpaşa', lat: 36.8864, lng: 30.6821, city: 'Antalya' },
+  { id: 'loc-adn', label: 'Adana - Seyhan', lat: 37.0000, lng: 35.3213, city: 'Adana' },
+]
 
 export const mockStations = [
   // İstanbul
@@ -24,7 +31,6 @@ export const mockStations = [
     address: 'Caferağa Mah. Rıhtım Cad. No: 42, Kadıköy / İstanbul',
     latitude: 40.9912,
     longitude: 29.0254,
-    distanceKm: 0.8,
     isOpen247: true,
     benzin95: 71.31,
     motorin: 79.80,
@@ -42,12 +48,11 @@ export const mockStations = [
     address: 'Barbaros Mah. Halk Cad. No: 18, Ataşehir / İstanbul',
     latitude: 40.9856,
     longitude: 29.1082,
-    distanceKm: 1.4,
     isOpen247: true,
     benzin95: 71.25,
     motorin: 79.75,
     lpg: 36.15,
-    services: ['Shell Select Market', 'Oto Yıkama', 'WC', 'Kahve'],
+    services: ['Shell Select', 'Oto Yıkama', 'WC', 'Kahve'],
     rating: 4.9,
   },
   {
@@ -60,7 +65,6 @@ export const mockStations = [
     address: 'Mimar Sinan Mah. Paşalimanı Cad. No: 5, Üsküdar / İstanbul',
     latitude: 41.0267,
     longitude: 29.0158,
-    distanceKm: 2.1,
     isOpen247: true,
     benzin95: 71.18,
     motorin: 79.68,
@@ -78,31 +82,12 @@ export const mockStations = [
     address: 'Zümrütevler Mah. E-5 Yanyol No: 110, Maltepe / İstanbul',
     latitude: 40.9389,
     longitude: 29.1412,
-    distanceKm: 3.5,
     isOpen247: true,
     benzin95: 70.95,
     motorin: 79.45,
     lpg: 35.95,
     services: ['ON/OFF Market', 'Yıkama', 'Mescit'],
     rating: 4.6,
-  },
-  {
-    id: 'st-ist-5',
-    name: 'TotalEnergies Beşiktaş Meydan',
-    brand: 'TotalEnergies',
-    brandId: 'total',
-    city: 'İstanbul',
-    district: 'Beşiktaş',
-    address: 'Sinanpaşa Mah. Barbaros Bulvarı No: 14, Beşiktaş / İstanbul',
-    latitude: 41.0422,
-    longitude: 29.0083,
-    distanceKm: 4.2,
-    isOpen247: true,
-    benzin95: 71.35,
-    motorin: 79.85,
-    lpg: 36.25,
-    services: ['Bonjour Market', 'Kahve', 'Elektrikli Şarj'],
-    rating: 4.8,
   },
 
   // Ankara
@@ -116,7 +101,6 @@ export const mockStations = [
     address: 'Mustafa Kemal Mah. Dumlupınar Bulvarı No: 120, Çankaya / Ankara',
     latitude: 39.9082,
     longitude: 32.7845,
-    distanceKm: 0.9,
     isOpen247: true,
     benzin95: 71.20,
     motorin: 79.70,
@@ -134,7 +118,6 @@ export const mockStations = [
     address: 'Kızılay Mah. Atatürk Bulvarı No: 85, Çankaya / Ankara',
     latitude: 39.9208,
     longitude: 32.8541,
-    distanceKm: 1.5,
     isOpen247: true,
     benzin95: 71.28,
     motorin: 79.78,
@@ -152,7 +135,6 @@ export const mockStations = [
     address: 'Emniyet Mah. Alparslan Türkeş Cad. No: 40, Yenimahalle / Ankara',
     latitude: 39.9385,
     longitude: 32.8122,
-    distanceKm: 2.8,
     isOpen247: true,
     benzin95: 71.12,
     motorin: 79.62,
@@ -163,7 +145,7 @@ export const mockStations = [
 
   // İzmir
   {
-    id: 'st-izmas-1',
+    id: 'st-izm-1',
     name: 'Opet Alsancak Liman',
     brand: 'Opet',
     brandId: 'opet',
@@ -172,7 +154,6 @@ export const mockStations = [
     address: 'Alsancak Mah. Liman Cad. No: 12, Konak / İzmir',
     latitude: 38.4382,
     longitude: 27.1419,
-    distanceKm: 1.1,
     isOpen247: true,
     benzin95: 71.22,
     motorin: 79.72,
@@ -181,7 +162,7 @@ export const mockStations = [
     rating: 4.8,
   },
   {
-    id: 'st-izmas-2',
+    id: 'st-izm-2',
     name: 'Shell Bornova Ege Üniversitesi',
     brand: 'Shell',
     brandId: 'shell',
@@ -190,7 +171,6 @@ export const mockStations = [
     address: 'Kazımdirik Mah. Ankara Cad. No: 145, Bornova / İzmir',
     latitude: 38.4601,
     longitude: 27.2154,
-    distanceKm: 2.3,
     isOpen247: true,
     benzin95: 71.19,
     motorin: 79.69,
@@ -210,7 +190,6 @@ export const mockStations = [
     address: 'Odunluk Mah. İzmir Yolu Cad. No: 80, Nilüfer / Bursa',
     latitude: 40.2014,
     longitude: 28.9812,
-    distanceKm: 1.2,
     isOpen247: true,
     benzin95: 71.15,
     motorin: 79.65,
@@ -230,7 +209,6 @@ export const mockStations = [
     address: 'Meltem Mah. 100. Yıl Bulvarı No: 90, Muratpaşa / Antalya',
     latitude: 36.8864,
     longitude: 30.6821,
-    distanceKm: 0.9,
     isOpen247: true,
     benzin95: 71.24,
     motorin: 79.74,
@@ -240,35 +218,60 @@ export const mockStations = [
   },
 ]
 
-export function getNearbyStations({ brandId = 'all', cityFilter = 'Tüm Şehirler', sortBy = 'distance', search = '' } = {}) {
-  let filtered = [...mockStations]
+function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return Number((R * c).toFixed(1))
+}
 
-  if (cityFilter && cityFilter !== 'Tüm Şehirler') {
-    filtered = filtered.filter((s) => s.city.toLowerCase() === cityFilter.toLowerCase())
-  }
+export function getNearbyStations({ userLocationId = 'loc-ist', brandId = 'all', sortBy = 'distance', search = '' } = {}) {
+  const activeLoc = userLocations.find((l) => l.id === userLocationId) ?? userLocations[0]
 
-  if (brandId && brandId !== 'all') {
-    filtered = filtered.filter((s) => s.brandId === brandId)
-  }
+  let mapped = mockStations.map((st) => {
+    const dist = calculateDistanceKm(activeLoc.lat, activeLoc.lng, st.latitude, st.longitude)
+    return {
+      ...st,
+      distanceKm: dist,
+      isSameCity: st.city.toLowerCase() === activeLoc.city.toLowerCase(),
+    }
+  })
 
+  // If user searched text, match against name, district, city, brand
   if (search.trim()) {
-    const query = search.toLowerCase().trim()
-    filtered = filtered.filter(
+    const q = search.toLowerCase().trim()
+    mapped = mapped.filter(
       (s) =>
-        s.name.toLowerCase().includes(query) ||
-        s.district.toLowerCase().includes(query) ||
-        s.city.toLowerCase().includes(query) ||
-        s.brand.toLowerCase().includes(query),
+        s.name.toLowerCase().includes(q) ||
+        s.district.toLowerCase().includes(q) ||
+        s.city.toLowerCase().includes(q) ||
+        s.brand.toLowerCase().includes(q),
     )
   }
 
-  if (sortBy === 'price') {
-    filtered.sort((a, b) => a.benzin95 - b.benzin95)
-  } else {
-    filtered.sort((a, b) => a.distanceKm - b.distanceKm)
+  // Filter brand
+  if (brandId && brandId !== 'all') {
+    mapped = mapped.filter((s) => s.brandId === brandId)
   }
 
-  return filtered
+  // Sort
+  if (sortBy === 'price') {
+    mapped.sort((a, b) => a.benzin95 - b.benzin95)
+  } else {
+    // Distance sort: prioritize same city first, then closest km!
+    mapped.sort((a, b) => {
+      if (a.isSameCity !== b.isSameCity) {
+        return a.isSameCity ? -1 : 1
+      }
+      return a.distanceKm - b.distanceKm
+    })
+  }
+
+  return mapped
 }
 
 export function openStationDirections(station) {
