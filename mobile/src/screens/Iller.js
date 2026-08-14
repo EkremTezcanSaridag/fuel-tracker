@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -6,6 +6,7 @@ import { Pressable, RefreshControl, ScrollView, Text, TextInput, View, StyleShee
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
 import { fuelTabs } from '../services/fuelData'
+import { defaultFavoriteCities, loadFavoriteCities, toggleFavoriteCity } from '../services/favoriteCities'
 
 function formatCurrency(value) {
   return `${value.toFixed(2)} ₺`
@@ -34,24 +35,40 @@ export default function Iller() {
   const { data, refresh, refreshing } = useFuelData()
   const [selectedFuel, setSelectedFuel] = useState(fuelTabs[0])
   const [searchQuery, setSearchQuery] = useState('')
+  const [favoriteCities, setFavoriteCities] = useState(defaultFavoriteCities)
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
   const selectedFuelKey = selectedFuel.key
   const selectedFuelTitle = selectedFuel.title
+
+  useEffect(() => {
+    loadFavoriteCities().then(setFavoriteCities)
+  }, [])
+
+  async function handleToggleFavorite(cityName) {
+    const updated = await toggleFavoriteCity(cityName)
+    setFavoriteCities(updated)
+  }
 
   const cities = useMemo(
     () => {
       const normalizedQuery = normalizeSearch(searchQuery.trim())
 
       return [...data.prices]
-        .filter((city) => !normalizedQuery || normalizeSearch(city.city).includes(normalizedQuery))
+        .filter((city) => {
+          if (showOnlyFavorites && !favoriteCities.includes(city.city)) return false
+          if (normalizedQuery && !normalizeSearch(city.city).includes(normalizedQuery)) return false
+          return true
+        })
         .sort((first, second) => first[selectedFuelKey] - second[selectedFuelKey])
         .map((city) => ({
           name: city.city,
           price: formatCurrency(city[selectedFuelKey]),
           change: formatChange(city.change),
           stations: formatStationCount(city.stations),
+          isFavorite: favoriteCities.includes(city.city),
         }))
     },
-    [data.prices, searchQuery, selectedFuelKey],
+    [data.prices, favoriteCities, searchQuery, selectedFuelKey, showOnlyFavorites],
   )
 
   const bestCity = cities[0]
@@ -128,7 +145,19 @@ export default function Iller() {
           </View>
         </View>
 
-        <View style={styles.segmentRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
+          <Pressable
+            onPress={() => setShowOnlyFavorites((prev) => !prev)}
+            style={({ pressed }) => [styles.segment, showOnlyFavorites && styles.favoriteSegmentActive, pressed && styles.pressed]}
+          >
+            <MaterialCommunityIcons
+              name={showOnlyFavorites ? 'heart' : 'heart-outline'}
+              size={14}
+              color={showOnlyFavorites ? '#FF4D4D' : colors.mutedSoft}
+            />
+            <Text style={[styles.segmentText, showOnlyFavorites && { color: '#FF4D4D' }]}>Favoriler ({favoriteCities.length})</Text>
+          </Pressable>
+
           {fuelTabs.map((item) => {
             const selected = item.key === selectedFuel.key
 
@@ -147,7 +176,7 @@ export default function Iller() {
               </Pressable>
             )
           })}
-        </View>
+        </ScrollView>
 
         <View style={styles.insightCard}>
           <View style={styles.insightIcon}>
@@ -167,15 +196,15 @@ export default function Iller() {
         </View>
 
         <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>Şehir Listesi</Text>
+          <Text style={styles.listTitle}>{showOnlyFavorites ? 'Favori Şehirler' : 'Şehir Listesi'}</Text>
           <Text style={styles.listMeta}>{selectedFuelTitle}</Text>
         </View>
 
         {cities.length === 0 && (
           <View style={styles.emptyCard}>
             <MaterialCommunityIcons name="map-search-outline" size={28} color={colors.accent} />
-            <Text style={styles.emptyTitle}>İl bulunamadı</Text>
-            <Text style={styles.emptyText}>Arama metnini kısaltarak tekrar deneyin.</Text>
+            <Text style={styles.emptyTitle}>{showOnlyFavorites ? 'Favori iliniz yok' : 'İl bulunamadı'}</Text>
+            <Text style={styles.emptyText}>{showOnlyFavorites ? 'Kalp simgesine dokunarak il ekleyin.' : 'Arama metnini kısaltarak tekrar deneyin.'}</Text>
           </View>
         )}
 
@@ -189,7 +218,16 @@ export default function Iller() {
               </View>
 
               <View style={styles.cityInfo}>
-                <Text style={styles.cityName}>{city.name}</Text>
+                <View style={styles.cityNameRow}>
+                  <Text style={styles.cityName}>{city.name}</Text>
+                  <Pressable onPress={() => handleToggleFavorite(city.name)} style={styles.heartButton}>
+                    <MaterialCommunityIcons
+                      name={city.isFavorite ? 'heart' : 'heart-outline'}
+                      size={18}
+                      color={city.isFavorite ? '#FF4D4D' : colors.muted}
+                    />
+                  </Pressable>
+                </View>
                 <View style={styles.cityMetaRow}>
                   <MaterialCommunityIcons name="storefront-outline" size={12} color={colors.muted} />
                   <Text style={styles.cityMeta}>{city.stations}</Text>
@@ -356,6 +394,19 @@ const styles = StyleSheet.create({
   segmentActive: {
     backgroundColor: colors.accentDark,
     borderColor: colors.accent,
+  },
+  favoriteSegmentActive: {
+    backgroundColor: '#331111',
+    borderColor: '#FF4D4D',
+  },
+  cityNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justify: 'space-between',
+    gap: 6,
+  },
+  heartButton: {
+    padding: 2,
   },
   segmentText: {
     color: colors.mutedSoft,
