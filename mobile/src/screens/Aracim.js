@@ -122,6 +122,12 @@ export default function Aracim() {
   const monthlyMaximum = Math.max(...monthlyExpenses.map((item) => item.total), 1)
   const currentMonthExpense = monthlyExpenses[monthlyExpenses.length - 1]?.total ?? 0
 
+  const computedReceiptPricePerLiter = useMemo(() => {
+    const amt = toNumber(receiptAmount)
+    const ltr = toNumber(receiptLiters)
+    return ltr > 0 ? amt / ltr : 0
+  }, [receiptAmount, receiptLiters])
+
   function handleReceiptAmountChange(val) {
     setReceiptAmount(val)
     const numAmt = toNumber(val)
