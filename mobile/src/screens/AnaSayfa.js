@@ -1,10 +1,11 @@
-import { Fragment, useMemo } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Pressable, RefreshControl, ScrollView, View, Text, StyleSheet, useWindowDimensions } from 'react-native'
 import { colors, shadows } from '../theme'
 import { useFuelData } from '../hooks/useFuelData'
+import { defaultFavoriteCities, loadFavoriteCities } from '../services/favoriteCities'
 
 const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 const fuelSignalIcons = {
@@ -95,10 +96,27 @@ function getUpdateLabel(data, refreshing) {
 export default function AnaSayfa() {
   const { width } = useWindowDimensions()
   const { data, refresh, refreshing } = useFuelData()
+  const [favCities, setFavCities] = useState(defaultFavoriteCities)
   const fuels = data.homeFuels
   const marketSignal = data.marketSignal
   const trendSeries = data.homeTrendSeries
   const chartWidth = Math.max(210, Math.min(width - 92, 330))
+
+  useEffect(() => {
+    loadFavoriteCities().then(setFavCities)
+  }, [])
+
+  const favoriteCityPrices = useMemo(() => {
+    return favCities.map((cityName) => {
+      const cityData = data.prices.find((p) => p.city === cityName)
+      return {
+        city: cityName,
+        benzin: cityData?.benzin95 ?? 0,
+        motorin: cityData?.motorin ?? 0,
+        lpg: cityData?.lpg ?? 0,
+      }
+    })
+  }, [data.prices, favCities])
 
   const chartSeries = useMemo(
     () =>
@@ -288,6 +306,42 @@ export default function AnaSayfa() {
           <Text style={styles.signalDisclaimer}>
             Son hesaplama: {marketSignal.updatedAt} · Tahmini sinyaldir, kesin fiyat değişikliği değildir.
           </Text>
+        </View>
+
+        {/* Favori Şehirler Kıyaslaması Kartı */}
+        <View style={styles.favCitiesCard}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.favCitiesTitleGroup}>
+              <MaterialCommunityIcons name="heart" size={18} color="#FF4D4D" />
+              <Text style={styles.sectionTitle}>Favori Şehir Fiyat Kıyaslaması</Text>
+            </View>
+            <Text style={styles.favCitiesSubText}>{favCities.length} şehir takipte</Text>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.favCitiesScroll}>
+            {favoriteCityPrices.map((item) => (
+              <View key={item.city} style={styles.favCityTile}>
+                <View style={styles.favCityHeader}>
+                  <MaterialCommunityIcons name="map-marker-outline" size={15} color={colors.accent} />
+                  <Text style={styles.favCityName}>{item.city}</Text>
+                </View>
+                <View style={styles.favCityPricesRow}>
+                  <View style={styles.favCityPriceBox}>
+                    <Text style={styles.favCityFuelType}>Benzin</Text>
+                    <Text style={styles.favCityPriceVal}>{item.benzin ? `${item.benzin.toFixed(2)} ₺` : '--'}</Text>
+                  </View>
+                  <View style={styles.favCityPriceBox}>
+                    <Text style={styles.favCityFuelType}>Motorin</Text>
+                    <Text style={styles.favCityPriceVal}>{item.motorin ? `${item.motorin.toFixed(2)} ₺` : '--'}</Text>
+                  </View>
+                  <View style={styles.favCityPriceBox}>
+                    <Text style={styles.favCityFuelType}>LPG</Text>
+                    <Text style={styles.favCityPriceVal}>{item.lpg ? `${item.lpg.toFixed(2)} ₺` : '--'}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
         </View>
 
         <View style={styles.chartCard}>
@@ -906,15 +960,71 @@ const styles = StyleSheet.create({
     marginRight: 6,
     width: 7,
   },
-  legendText: {
-    color: colors.mutedSoft,
-    fontSize: 11,
-    fontWeight: '800',
-  },
   legendValue: {
     color: colors.white,
     fontSize: 10,
     fontWeight: '900',
     marginLeft: 5,
+  },
+  favCitiesCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 14,
+    ...shadows.soft,
+  },
+  favCitiesTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  favCitiesSubText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  favCitiesScroll: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingTop: 10,
+  },
+  favCityTile: {
+    width: 170,
+    backgroundColor: colors.bgSoft,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  favCityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 8,
+  },
+  favCityName: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  favCityPricesRow: {
+    gap: 4,
+  },
+  favCityPriceBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  favCityFuelType: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  favCityPriceVal: {
+    color: colors.accent,
+    fontSize: 11,
+    fontWeight: '900',
   },
 })
