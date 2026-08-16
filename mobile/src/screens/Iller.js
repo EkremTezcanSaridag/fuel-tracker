@@ -228,10 +228,6 @@ export default function Iller() {
                     />
                   </Pressable>
                 </View>
-                <View style={styles.cityMetaRow}>
-                  <MaterialCommunityIcons name="storefront-outline" size={12} color={colors.muted} />
-                  <Text style={styles.cityMeta}>{city.stations}</Text>
-                </View>
                 <View style={styles.cityChangeWrap}>
                   <MaterialCommunityIcons
                     name={trendUp ? 'arrow-up-bold' : 'arrow-down-bold'}
