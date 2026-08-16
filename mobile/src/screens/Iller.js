@@ -318,23 +318,20 @@ export default function Iller() {
           </>
         ) : (
           <>
-            {/* Mevcut Konum GPS Kartı */}
-            <Pressable onPress={handleGetLiveGps} style={({ pressed }) => [styles.singleGpsCard, customGpsCoords && styles.singleGpsCardActive, pressed && styles.pressed]}>
-              <View style={[styles.singleGpsIconBox, customGpsCoords && styles.singleGpsIconBoxActive]}>
-                <MaterialCommunityIcons name="crosshairs-gps" size={20} color={customGpsCoords ? colors.bg : colors.accent} />
+            {/* İstasyon Rehberi Bilgi Kartı */}
+            <View style={styles.singleGpsCardActive}>
+              <View style={styles.singleGpsIconBoxActive}>
+                <MaterialCommunityIcons name="gas-station" size={20} color={colors.bg} />
               </View>
               <View style={styles.singleGpsCopy}>
-                <Text style={[styles.singleGpsTitle, customGpsCoords && styles.singleGpsTextActive]}>
-                  {customGpsCoords ? 'Canlı GPS Konumunuz Aktif' : 'Mevcut Konumumu Kullan (GPS)'}
+                <Text style={styles.singleGpsTextActive}>
+                  Akaryakıt İstasyon Rehberi
                 </Text>
-                <Text style={[styles.singleGpsSubtitle, customGpsCoords && styles.singleGpsSubActive]}>
-                  {customGpsCoords && typeof customGpsCoords.lat === 'number' && typeof customGpsCoords.lng === 'number'
-                    ? `Konum: ${detectCityFromCoords(customGpsCoords.lat, customGpsCoords.lng)} (${customGpsCoords.lat.toFixed(2)}, ${customGpsCoords.lng.toFixed(2)}) · En yakın istasyonlar`
-                    : 'Dokunarak canlı cihaz konumunuzdan en yakın istasyonları hesaplayın.'}
+                <Text style={styles.singleGpsSubActive}>
+                  Marka veya il/ilçe seçerek istasyon fiyatlarını görün ve Yol Tarifi alın.
                 </Text>
               </View>
-              <MaterialCommunityIcons name="chevron-right" size={20} color={customGpsCoords ? colors.bg : colors.mutedSoft} />
-            </Pressable>
+            </View>
 
             {/* Mesafe Yarıçapı Filtre Çipleri */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentRow}>
