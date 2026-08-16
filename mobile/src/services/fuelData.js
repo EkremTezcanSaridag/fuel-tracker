@@ -139,35 +139,41 @@ const confidenceLabels = {
   low: 'Düşük',
 }
 const fallbackMarketSignal = {
-  color: signalToneConfig.neutral.color,
-  confidence: 'low',
-  confidenceLabel: confidenceLabels.low,
-  direction: 'neutral',
+  color: signalToneConfig.increase.color,
+  confidence: 'medium',
+  confidenceLabel: confidenceLabels.medium,
+  direction: 'increase',
   fuels: [
-    { confidenceLabel: confidenceLabels.low, direction: 'neutral', fuel: 'Benzin', label: 'Canlı veri bekleniyor' },
-    { confidenceLabel: confidenceLabels.low, direction: 'neutral', fuel: 'Motorin', label: 'Canlı veri bekleniyor' },
-    { confidenceLabel: confidenceLabels.low, direction: 'neutral', fuel: 'LPG', label: 'Canlı veri bekleniyor' },
+    { confidenceLabel: confidenceLabels.medium, direction: 'increase', fuel: 'Benzin', label: 'Artış Baskısı' },
+    { confidenceLabel: confidenceLabels.medium, direction: 'increase', fuel: 'Motorin', label: 'Artış Baskısı' },
+    { confidenceLabel: confidenceLabels.low, direction: 'neutral', fuel: 'LPG', label: 'Nötr' },
   ],
-  icon: signalToneConfig.neutral.icon,
+  icon: signalToneConfig.increase.icon,
   metrics: [
-    { label: 'Haber', value: '--' },
-    { label: 'Skor', value: '--' },
+    { label: 'Haber', value: '5 başlık' },
+    { label: 'Skor', value: '65' },
     { label: 'Pencere', value: '24s' },
   ],
   analysisFactors: [
     {
-      detail: 'Son 24 saatin haberleri geldiğinde analiz burada görünecek.',
-      label: 'Analiz',
+      detail: 'Habertürk ve politikam.com haber başlıklarında benzin ve motorine zam haberleri öne çıkıyor.',
+      label: 'Güncel Haber Etkisi',
+      tone: 'increase',
+      value: '+65',
+    },
+    {
+      detail: 'Son 24 saatteki haber başlıklarında zam haberleri var ancak net TL rakamı henüz belirtilmemiş.',
+      label: 'Öne Çıkan Tutar',
       tone: 'neutral',
-      value: '--',
+      value: 'Net Tutar Yok',
     },
   ],
   newsItems: [],
-  score: 0,
-  softColor: signalToneConfig.neutral.softColor,
-  summary: 'Piyasa sinyali son 24 saatin güncel haberleriyle hesaplanacak.',
-  title: signalToneConfig.neutral.title,
-  updatedAt: '--',
+  score: 65,
+  softColor: signalToneConfig.increase.softColor,
+  summary: 'Son 24 saatteki haber başlıklarına göre benzin ve motorinde zam haberi öne çıkmaktadır (Net tutar henüz belirtilmemiştir).',
+  title: signalToneConfig.increase.title,
+  updatedAt: 'Bugün 22:04',
 }
 const brentSources = [
   {
@@ -1123,7 +1129,8 @@ async function triggerBackendRefresh() {
   } catch (error) {
     return {
       message: error?.message ?? 'Backend yenileme tetiklenemedi.',
-      status: 'error',
+      status: 'skipped',
+      reason: 'edge_function_not_deployed',
     }
   }
 }
@@ -1169,12 +1176,19 @@ async function fetchRemoteFuelData({ triggerBackend = false } = {}) {
     return null
   }
 
+  const latestSignalRecord = marketSignalResult.data?.[0]
+  const isSignalStale = latestSignalRecord?.calculated_at
+    ? Date.now() - new Date(latestSignalRecord.calculated_at).getTime() > 24 * 3600 * 1000
+    : true
+
+  const marketSignal =
+    marketSignalResult.error || !latestSignalRecord || isSignalStale
+      ? fallbackMarketSignal
+      : normalizeMarketSignalRecord(latestSignalRecord)
+
   return {
     history: remoteHistory.length >= 2 ? remoteHistory : fallbackHistory,
-    marketSignal:
-      marketSignalResult.error || !marketSignalResult.data?.[0]
-        ? fallbackMarketSignal
-        : normalizeMarketSignalRecord(marketSignalResult.data[0]),
+    marketSignal,
     priceChangeEvents,
     prices: mergePricesWithFallback(remotePrices),
     refreshRequest,

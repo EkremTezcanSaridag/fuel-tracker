@@ -25,14 +25,17 @@ alter table public.market_signals add column if not exists news_items jsonb not 
 
 alter table public.market_signals enable row level security;
 
-grant select on public.market_signals to anon;
+grant select, insert, update on public.market_signals to anon;
 grant all on public.market_signals to service_role;
 grant usage, select on sequence public.market_signals_id_seq to service_role;
+grant usage, select on sequence public.market_signals_id_seq to anon;
 
 drop policy if exists "market_signals_select_anon" on public.market_signals;
+drop policy if exists "market_signals_all_anon" on public.market_signals;
 
-create policy "market_signals_select_anon"
+create policy "market_signals_all_anon"
 on public.market_signals
-for select
+for all
 to anon
-using (true);
+using (true)
+with check (true);

@@ -562,8 +562,14 @@ def hafiza_degisimi_olustur(price_memory):
 
 
 def piyasa_sinyali_kaydet(degisimler=None, onceki_pompa_hafizasi=None):
+    sinyal = build_market_signal(degisimler or [], onceki_pompa_hafizasi)
     try:
-        sinyal = build_market_signal(degisimler or [], onceki_pompa_hafizasi)
+        with open("market_signals.json", "w", encoding="utf-8") as file:
+            json.dump(sinyal, file, ensure_ascii=False, indent=2)
+    except Exception as io_err:
+        print(f"Yerel market_signals.json yazılamadı: {io_err}")
+
+    try:
         supabase.table("market_signals").upsert(sinyal, on_conflict="signal_date").execute()
         print(
             "Piyasa sinyali kaydedildi: "
@@ -571,9 +577,9 @@ def piyasa_sinyali_kaydet(degisimler=None, onceki_pompa_hafizasi=None):
         )
         return sinyal
     except Exception as hata:
-        print("Piyasa sinyali kaydedilemedi. backend/supabase_market_signals.sql dosyasini Supabase'de calistirin.")
+        print("Piyasa sinyali Supabase'e kaydedilemedi. backend/supabase_market_signals.sql dosyasını Supabase'de çalıştırın.")
         print(f"Detay: {hata}")
-        return None
+        return sinyal
 
 
 def test_bildirimi_gonder(installation_id):

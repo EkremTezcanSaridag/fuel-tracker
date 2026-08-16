@@ -318,6 +318,12 @@ def is_recent_news_item(published_at, max_age_hours=NEWS_MAX_AGE_HOURS):
     return published_at >= cutoff
 
 
+NEWS_PRICE_PATTERN = re.compile(
+    r"(?<!\d)(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:(?:TL|lira|liralık|TL'lik|TLlik)\b|₺)",
+    re.IGNORECASE,
+)
+
+
 def clean_news_text(value):
     decoded = unescape(value or "")
     without_tags = re.sub(r"<[^>]+>", " ", decoded)
@@ -333,20 +339,37 @@ def extract_news_price_mentions(*values):
         text = clean_news_text(value)
 
         for match in NEWS_PRICE_PATTERN.finditer(text):
-            amount = match.group(1).replace(".", ",")
-            display = f"{amount} TL"
-            context_start = max(0, match.start() - 45)
-            context_end = min(len(text), match.end() + 55)
-            context = text[context_start:context_end].strip(" -:;,.\")
-            key = (display, context.lower())
+            raw_num = match.group(1).replace(".", ",")
+            try:
+                num_val = float(raw_num.replace(",", "."))
+                amount_str = f"{num_val:.2f}".replace(".", ",")
+            except ValueError:
+                amount_str = raw_num
+
+            context_start = max(0, match.start() - 40)
+            context_end = min(len(text), match.end() + 40)
+            context = text[context_start:context_end]
+            context_lower = context.lower()
+
+            is_increase = any(k in context_lower for k in ["zam", "artış", "artis", "yüksel", "yuksel", "zamlandı"])
+            is_decrease = any(k in context_lower for k in ["indirim", "düşüş", "dusus", "gerile"])
+
+            if is_increase and not is_decrease:
+                display = f"+{amount_str} TL Zam"
+            elif is_decrease and not is_increase:
+                display = f"-{amount_str} TL İndirim"
+            else:
+                display = f"{amount_str} TL"
+
+            key = (display, context_lower)
 
             if key in seen:
                 continue
 
             seen.add(key)
-            mentions.append({"display": display, "context": context})
+            mentions.append({"display": display, "context": context.strip(" -:;,.\\")})
 
-            if len(mentions) >= 3:
+            if len(mentions) >= 5:
                 return mentions
 
     return mentions
@@ -680,13 +703,62 @@ def build_fuel_signals(direction, confidence, score):
     return signals
 
 
+def analyze_dominant_news_price(news_items):
+    if not news_items:
+        return None
+
+    counts = {}
+    total_sources = len(news_items)
+
+    for item in news_items:
+        source_name = item.get("source", "Haber")
+        title = item.get("title", "")
+        mentions = item.get("price_mentions", [])
+
+        if not mentions and title:
+            mentions = extract_news_price_mentions(title)
+
+        seen_in_item = set()
+        for mention in mentions:
+            display = mention.get("display") if isinstance(mention, dict) else str(mention)
+            if not display or display in seen_in_item:
+                continue
+            seen_in_item.add(display)
+
+            if display not in counts:
+                counts[display] = {
+                    "display": display,
+                    "count": 0,
+                    "sources": set(),
+                }
+
+            counts[display]["count"] += 1
+            counts[display]["sources"].add(source_name)
+
+    if not counts:
+        return None
+
+    sorted_mentions = sorted(counts.values(), key=lambda x: x["count"], reverse=True)
+    top_mention = sorted_mentions[0]
+
+    return {
+        "display": top_mention["display"],
+        "count": top_mention["count"],
+        "total_sources": total_sources,
+        "detail": (
+            f"İncelenen {total_sources} haber başlığının {top_mention['count']}'inde "
+            f"net olarak {top_mention['display']} beklentisi telaffuz edildi."
+        ),
+    }
+
+
 def collect_news_price_mentions(news_items):
     mentions = []
     seen = set()
 
     for item in news_items:
         for mention in item.get("price_mentions", []):
-            display = mention.get("display")
+            display = mention.get("display") if isinstance(mention, dict) else str(mention)
 
             if not display or display in seen:
                 continue
@@ -699,15 +771,33 @@ def collect_news_price_mentions(news_items):
 
 def build_analysis_factors(direction, confidence, news_analysis, news_items, calculated_at):
     latest_news_time = news_items[0].get("published_at") if news_items else None
-    price_mentions = collect_news_price_mentions(news_items)
+    dominant_price = analyze_dominant_news_price(news_items)
 
-    return [
+    factors = [
         {
             "label": "Guncel haber etkisi",
             "value": f"{news_analysis['score']:+d}",
             "tone": news_analysis["direction"],
             "detail": news_analysis["summary"],
         },
+    ]
+
+    if dominant_price:
+        factors.append({
+            "label": "Öne Çıkan Tutar (Çoğunluk)",
+            "value": dominant_price["display"],
+            "tone": news_analysis["direction"],
+            "detail": dominant_price["detail"],
+        })
+    else:
+        factors.append({
+            "label": "Öne Çıkan Tutar",
+            "value": "Net Tutar Bulunamadı",
+            "tone": "neutral",
+            "detail": "Son 24 saatteki haber başlıklarında henüz çoğunluğun birleştiği net bir zam/indirim rakamı yer almadı.",
+        })
+
+    factors.extend([
         {
             "label": "Haber guncelligi",
             "value": f"{len(news_items)} baslik",
@@ -719,17 +809,6 @@ def build_analysis_factors(direction, confidence, news_analysis, news_items, cal
             ),
         },
         {
-            "label": "Haberlerdeki tutarlar",
-            "value": f"{len(price_mentions)} tutar" if price_mentions else "Bulunamadi",
-            "tone": "neutral",
-            "detail": (
-                f"Haber metinlerinde {', '.join(price_mentions)} ifadesi yer aliyor. "
-                "Bunlar haberde belirtilen tutarlardir; canli pompa fiyati degildir."
-                if price_mentions
-                else "Guncel haber metinlerinde TL cinsinden net bir tutar bulunamadi."
-            ),
-        },
-        {
             "label": "Analiz kapsami",
             "value": direction_label(direction),
             "tone": direction,
@@ -738,7 +817,9 @@ def build_analysis_factors(direction, confidence, news_analysis, news_items, cal
                 f"{NEWS_MAX_AGE_HOURS} saatteki haberler kullanildi. Guven: {confidence}."
             ),
         },
-    ]
+    ])
+
+    return factors
 
 
 def build_summary(direction, confidence, index_change_3d, index_change_7d, brent_change_3d, usd_change_3d):
@@ -877,6 +958,54 @@ def call_gemini_analysis(payload):
         return None
 
 
+def call_groq_analysis(payload):
+    api_key = os.getenv("GROQ_API_KEY")
+
+    if not api_key:
+        return None
+
+    model = os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile"
+
+    prompt = (
+        "Türkiye akaryakıt piyasası için son 24 saatlik haber başlıklarını inceleyerek son derece kısa, net ve kanıta dayalı Türkçe bir analiz yaz. "
+        "Yalnızca verilen haber başlıklarını esas al. "
+        "Eğer haberlerde net bir zam veya indirim rakamı (örneğin 5 TL zam) geçiyorsa bunu özetinde açıkça ifade et. "
+        "Eğer net bir rakam geçmiyorsa uydurma rakam yazma, 'genel zam/indirim haberi öne çıkıyor, net tutar henüz belirtilmedi' şeklinde yaz. "
+        "Yanıtını SADECE geçerli bir JSON olarak ver. Örnek format: {\"summary\": \"...\", \"watch_level\": \"high|medium|low\", \"key_reason\": \"...\"}\n\n"
+        f"Haber Verisi:\n{json.dumps(payload, ensure_ascii=False)}"
+    )
+
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.2,
+                "response_format": {"type": "json_object"},
+            },
+            timeout=25,
+        )
+        response.raise_for_status()
+        result = response.json()
+        output_text = result["choices"][0]["message"]["content"]
+        parsed = json.loads(output_text)
+
+        return {
+            "model": f"groq:{model}",
+            "summary": parsed.get("summary", ""),
+            "watch_level": parsed.get("watch_level", "medium"),
+            "key_reason": parsed.get("key_reason", ""),
+        }
+    except Exception as error:
+        print(f"Groq analizi hatasi: {error}")
+        return None
+
+
 def build_market_signal(price_changes=None, previous_price_memory=None):
     news_items = fetch_news_items()
     price_analysis = merge_price_memory(summarize_price_changes(price_changes or []), previous_price_memory)
@@ -902,12 +1031,14 @@ def build_market_signal(price_changes=None, previous_price_memory=None):
         "news": news_items[:5],
         "news_analysis": news_analysis,
     }
-    ai_result = call_gemini_analysis(ai_payload)
+    ai_result = call_groq_analysis(ai_payload) or call_gemini_analysis(ai_payload)
     ai_summary = (
         ai_result["summary"]
-        if ai_result
+        if ai_result and ai_result.get("summary")
         else build_rule_based_ai_summary(direction, confidence, news_analysis, news_items)
     )
+
+    mode = "groq" if (ai_result and "groq" in ai_result.get("model", "")) else ("gemini" if ai_result else "rules")
 
     return {
         "signal_date": calculated_at.strftime("%Y-%m-%d"),
@@ -924,7 +1055,7 @@ def build_market_signal(price_changes=None, previous_price_memory=None):
         "index_change_7d": None,
         "signals": build_fuel_signals(direction, confidence, score),
         "analysis": {
-            "mode": "gemini" if ai_result else "rules",
+            "mode": mode,
             "analysis_basis": "news_only",
             "lookback_hours": NEWS_MAX_AGE_HOURS,
             "news_score": news_analysis["score"],
