@@ -187,7 +187,6 @@ export default function AnaSayfa() {
                 color={refreshing ? colors.mutedSoft : colors.accent}
               />
             </Pressable>
-            <MaterialCommunityIcons name="account-circle-outline" size={21} color={colors.accent} />
           </View>
         </View>
 

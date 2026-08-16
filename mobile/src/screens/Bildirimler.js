@@ -262,7 +262,7 @@ export default function Bildirimler() {
             <MaterialCommunityIcons name="bell-outline" size={18} color={colors.accent} />
           </View>
           <Text style={styles.brand}>Yakıt Radar</Text>
-          <MaterialCommunityIcons name="account-circle-outline" size={21} color={colors.accent} />
+          <View style={{ width: 18 }} />
         </View>
 
         <View style={styles.titleRow}>
